@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DuoFit & Macro Tracker — Verdi & Nonit</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            emerald: {
+              450: '#10b981',
+              550: '#059669',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar & mobile polish */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulse-soft {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-pulse-soft {
+      animation: pulse-soft 2.5s infinite ease-in-out;
+    }
+    .glass-card {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+
+  <!-- TOAST / MESSAGE BOX (Pengganti alert) -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[92%] max-w-md pointer-events-none"></div>
+
+  <!-- PROFILE & PIN GATE OVERLAY (Pilih Siapa yang Menggunakan HP Ini) -->
+  <div id="profile-gate" class="fixed inset-0 z-40 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-5 transition-opacity duration-300">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl">
+      <div class="flex items-center justify-center gap-2.5 mb-2">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-emerald-500/20">
+          <i data-lucide="dumbbell" class="w-5 h-5"></i>
+        </div>
+        <h1 class="font-display text-2xl font-extrabold tracking-tight text-white">DuoFit<span class="text-emerald-400">.</span></h1>
+      </div>
+      <p class="text-center text-slate-400 text-sm mb-6">Ruang Bersama Nutrisi & Fitness <span class="text-slate-200 font-semibold">Verdi & Nonit</span></p>
+
+      <!-- Pilih User -->
+      <div id="user-select-step">
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 text-center">Siapa yang menggunakan HP ini?</p>
+        <div class="grid grid-cols-2 gap-3.5 mb-5">
+          <button onclick="selectLoginUser('verdi')" class="group relative flex flex-col items-center p-5 rounded-2xl bg-slate-800/80 hover:bg-emerald-950/50 border-2 border-slate-700 hover:border-emerald-500 transition-all active:scale-95">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-2xl font-extrabold text-slate-950 mb-3 shadow-lg group-hover:scale-105 transition-transform">
+              V
+            </div>
+            <span class="font-display font-bold text-lg text-white">Verdi</span>
+            <span class="text-[11px] text-emerald-400 font-medium mt-0.5">Clean Bulk Mode</span>
+          </button>
+
+          <button onclick="selectLoginUser('nonit')" class="group relative flex flex-col items-center p-5 rounded-2xl bg-slate-800/80 hover:bg-rose-950/40 border-2 border-slate-700 hover:border-rose-400 transition-all active:scale-95">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-400 to-amber-400 flex items-center justify-center text-2xl font-extrabold text-slate-950 mb-3 shadow-lg group-hover:scale-105 transition-transform">
+              N
+            </div>
+            <span class="font-display font-bold text-lg text-white">Nonit</span>
+            <span class="text-[11px] text-rose-300 font-medium mt-0.5">Lean Toning Mode</span>
+          </button>
+        </div>
+        <div class="flex items-center justify-center gap-2 text-xs text-slate-500">
+          <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+          <span id="connection-text">Menghubungkan ke Cloud Sync...</span>
+        </div>
+      </div>
+
+      <!-- Step PIN opsional / cepat -->
+      <div id="pin-step" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <button onclick="backToUserSelect()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 py-1 px-2 rounded-lg bg-slate-800">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Ganti Profil
+          </button>
+          <span id="pin-user-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300">Verdi</span>
+        </div>
+        <p class="text-sm text-slate-300 text-center mb-1">Masukkan PIN 4-Digit (Default: <span class="font-mono text-emerald-400 font-bold" id="pin-hint">1234</span>)</p>
+        <p class="text-xs text-slate-500 text-center mb-4">Bisa diubah kapan saja di menu Pengaturan</p>
+        
+        <div class="flex justify-center gap-3 mb-4">
+          <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••" class="w-40 text-center text-2xl tracking-[0.5em] font-mono font-bold bg-slate-800 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-2xl py-3 text-white" />
+        </div>
+        <button onclick="verifyPinAndEnter()" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition active:scale-98">
+          Masuk ke Ruang Bersama
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER BAR -->
+  <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-950/85 glass-card border-b border-slate-200 dark:border-slate-800/80 px-4 py-3">
+    <div class="max-w-lg mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-extrabold shadow-sm">
+          <i data-lucide="activity" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-display font-extrabold text-base tracking-tight leading-none">DuoFit & Macro</h1>
+            <span id="live-sync-pill" class="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5" id="header-date-label">Hari Ini</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Date Navigator -->
+        <div class="flex items-center bg-slate-100 dark:bg-slate-900 rounded-xl p-0.5 border border-slate-200 dark:border-slate-800">
+          <button onclick="changeDate(-1)" class="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg" title="Hari Sebelumnya">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <button onclick="resetToToday()" class="px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200" id="date-btn-text">
+            Hari Ini
+          </button>
+          <button onclick="changeDate(1)" class="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg" title="Hari Berikutnya">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Active User Switcher Pill -->
+        <button onclick="openProfileGate()" id="active-user-pill" class="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+          <span id="active-user-avatar" class="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-[11px] font-extrabold">V</span>
+          <span id="active-user-name">Verdi</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300" aria-label="Toggle Theme">
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-lg w-full mx-auto px-4 pt-4 pb-28 space-y-4">
+
+    <!-- NUDGE / PENGINGAT BANNER REAL-TIME DARI PASANGAN -->
+    <div id="partner-nudge-banner" class="hidden relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-rose-500/20 border border-amber-500/40 p-3.5 shadow-lg">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 animate-pulse-soft mt-0.5">
+          <i data-lucide="bell-ring" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400" id="nudge-sender-title">Pengingat dari Nonit</span>
+            <span class="text-[10px] text-slate-500 dark:text-slate-400" id="nudge-time">Baru saja</span>
+          </div>
+          <p class="text-sm font-semibold text-slate-900 dark:text-white mt-0.5 leading-snug" id="nudge-message-text">"Jangan lupa scoop whey setelah gym!"</p>
+          <div class="mt-2 flex items-center gap-2">
+            <button onclick="acknowledgeNudge()" class="text-xs font-bold px-3 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 transition">
+              Siap, Laksanakan! ✓
+            </button>
+            <button onclick="openNudgeModal()" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-900/10 dark:bg-white/10 text-slate-700 dark:text-slate-200">
+              Balas Nudge
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: DASHBOARD KOMPARATIF & PARTNER VIEW -->
+    <!-- ========================================== -->
+    <section id="view-dashboard" class="space-y-4">
+      
+      <!-- DUAL PARTNER STATUS CARDS (VERDI & NONIT SIDE-BY-SIDE / STACKED) -->
+      <div class="grid grid-cols-1 gap-3.5" id="dual-cards-container">
+        <!-- Rendered dynamically via JS for Verdi and Nonit -->
+      </div>
+
+      <!-- QUICK NUDGE & KONTROL BERSAMA BAR -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-500 flex items-center justify-center">
+              <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="font-display font-bold text-sm">Saling Ingatkan & Kontrol</h2>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400" id="nudge-target-subtitle">Kirim pengingat instan ke HP pasangan</p>
+            </div>
+          </div>
+          <button onclick="openNudgeModal()" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> Nudge
+          </button>
+        </div>
+
+        <!-- 1-Tap Quick Nudge Chips -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <button onclick="sendQuickNudge('Sudah minum Whey / penuhi target protein hari ini? 🥤')" class="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/20 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition">
+            🥤 Ingatkan Protein / Whey
+          </button>
+          <button onclick="sendQuickNudge('Jangan lupa Creatine 5g + minum air putih yang cukup! 💧')" class="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/20 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition">
+            ⚡ Creatine & Air
+          </button>
+          <button onclick="sendQuickNudge('Yuk jadwalin Gym / Padel / Cardio sore ini! 💪🎾')" class="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/20 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition">
+            🎾 Ajak Gym / Padel
+          </button>
+          <button onclick="sendQuickNudge('Cek sisa kalori malam ini ya, tetap on-track! 🔥')" class="shrink-0 text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500/20 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium transition">
+            🎯 Cek Sisa Kalori
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB FILTER LOG HARI INI (VERDI vs NONIT) -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-display font-bold text-sm flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-4 h-4 text-emerald-500"></i>
+            Detail Log Hari Ini
+          </h3>
+          <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button onclick="setDashboardLogFilter('verdi')" id="filter-log-verdi" class="px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950">
+              Verdi
+            </button>
+            <button onclick="setDashboardLogFilter('nonit')" id="filter-log-nonit" class="px-3 py-1 rounded-lg text-xs font-bold transition text-slate-500 dark:text-slate-400">
+              Nonit
+            </button>
+          </div>
+        </div>
+
+        <!-- Ringkasan Makro (Karbo, Lemak, Protein) User Terpilih -->
+        <div id="selected-user-macro-breakdown" class="grid grid-cols-3 gap-2 mb-4">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Daftar Makanan & Workout -->
+        <div class="space-y-3" id="daily-logs-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- CATATAN & EVALUASI HARIAN BERSAMA -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <h3 class="font-display font-bold text-sm flex items-center gap-2 mb-3">
+          <i data-lucide="message-square-heart" class="w-4 h-4 text-rose-400"></i>
+          Catatan & Evaluasi Harian Bersama
+        </h3>
+
+        <div id="shared-notes-list" class="space-y-2.5 max-h-56 overflow-y-auto mb-3 pr-1">
+          <!-- Rendered by JS -->
+        </div>
+
+        <form onsubmit="submitSharedNote(event)" class="flex gap-2">
+          <input id="shared-note-input" type="text" placeholder="Tulis evaluasi, semangat, atau catatan makan..." class="flex-1 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-emerald-500" required />
+          <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shrink-0 transition">
+            Kirim
+          </button>
+        </form>
+      </div>
+
+      <!-- RIWAYAT & TREN 7 HARI TERAKHIR -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="font-display font-bold text-sm flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-500"></i>
+              Tren 7 Hari Terakhir
+            </h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Konsistensi Net Kalori & Target Protein</p>
+          </div>
+          <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button onclick="setHistoryUser('verdi')" id="hist-btn-verdi" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">Verdi</button>
+            <button onclick="setHistoryUser('nonit')" id="hist-btn-nonit" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400">Nonit</button>
+          </div>
+        </div>
+
+        <div id="weekly-history-container" class="space-y-2">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: CATAT NUTRISI (FOOD & SUPPLEMENTS)  -->
+    <!-- ========================================== -->
+    <section id="view-food" class="hidden space-y-4">
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="font-display font-bold text-base">Catat Asupan Nutrisi</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Mencatat untuk: <span class="font-bold text-emerald-500" id="food-for-label">Verdi</span></p>
+          </div>
+          <!-- Bisa bantu catatkan untuk pasangan juga! -->
+          <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button type="button" onclick="setLogTargetUser('verdi')" id="food-target-verdi" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">Verdi</button>
+            <button type="button" onclick="setLogTargetUser('nonit')" id="food-target-nonit" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500">Nonit</button>
+          </div>
+        </div>
+
+        <!-- 1-Tap Preset Favorit -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">1-Tap Preset & Suplemen Favorit</span>
+            <span class="text-[11px] text-emerald-500 font-medium">Klik untuk langsung tambah</span>
+          </div>
+          <div id="food-presets-grid" class="grid grid-cols-2 gap-2">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Form Input Manual -->
+        <form onsubmit="handleAddFood(event)" class="space-y-3 border-t border-slate-200 dark:border-slate-800 pt-4">
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nama Makanan / Minuman</label>
+              <input id="food-name" type="text" placeholder="Contoh: Dada Ayam Bakar + Nasi" required class="w-full text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Waktu Makan</label>
+              <select id="food-meal" class="w-full text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-2.5 focus:outline-none focus:border-emerald-500">
+                <option value="Sarapan">Sarapan</option>
+                <option value="Makan Siang">Makan Siang</option>
+                <option value="Makan Malam">Makan Malam</option>
+                <option value="Snack/Suplemen">Snack / Suplemen</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kalori (kcal)</label>
+              <input id="food-cal" type="number" min="0" step="1" placeholder="450" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-emerald-500 mb-1">Protein (g)</label>
+              <input id="food-protein" type="number" min="0" step="0.5" placeholder="38" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-emerald-500/40 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Karbo (g)</label>
+              <input id="food-carbs" type="number" min="0" step="0.5" placeholder="45" value="0" class="w-full text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Lemak (g)</label>
+              <input id="food-fat" type="number" min="0" step="0.5" placeholder="10" value="0" class="w-full text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <label class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 cursor-pointer">
+              <input id="save-as-preset" type="checkbox" class="rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+              Simpan ke menu favorit (1-Tap)
+            </label>
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition active:scale-98 flex items-center justify-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Simpan Log Makanan
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: CATAT WORKOUT & AKTIVITAS          -->
+    <!-- ========================================== -->
+    <section id="view-workout" class="hidden space-y-4">
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-display font-bold text-base">Catat Aktivitas & Gym</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Kalori terbakar otomatis menambah kuota kalori harian</p>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button type="button" onclick="setLogTargetUser('verdi')" id="wo-target-verdi" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">Verdi</button>
+            <button type="button" onclick="setLogTargetUser('nonit')" id="wo-target-nonit" class="px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500">Nonit</button>
+          </div>
+        </div>
+
+        <!-- Jenis Olahraga Grid -->
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Pilih Aktivitas</label>
+        <div class="grid grid-cols-3 gap-2 mb-4" id="workout-type-grid">
+          <button type="button" onclick="selectWorkoutType('Gym / Angkat Beban', 6.5)" class="wo-type-btn active-wo p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🏋️</span>
+            <span class="text-[11px] font-bold leading-tight">Gym / Beban</span>
+          </button>
+          <button type="button" onclick="selectWorkoutType('Padel', 8.0)" class="wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🎾</span>
+            <span class="text-[11px] font-bold leading-tight">Padel</span>
+          </button>
+          <button type="button" onclick="selectWorkoutType('Tenis', 7.5)" class="wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🏸</span>
+            <span class="text-[11px] font-bold leading-tight">Tenis</span>
+          </button>
+          <button type="button" onclick="selectWorkoutType('Elliptical / Treadmill', 7.2)" class="wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🏃</span>
+            <span class="text-[11px] font-bold leading-tight">Elliptical / Lari</span>
+          </button>
+          <button type="button" onclick="selectWorkoutType('Renang', 8.5)" class="wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🏊</span>
+            <span class="text-[11px] font-bold leading-tight">Renang</span>
+          </button>
+          <button type="button" onclick="selectWorkoutType('Jalan Kaki / Mobility', 4.0)" class="wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition">
+            <span class="text-lg">🚶</span>
+            <span class="text-[11px] font-bold leading-tight">Jalan / Mobility</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleAddWorkout(event)" class="space-y-3">
+          <input type="hidden" id="wo-type" value="Gym / Angkat Beban" />
+          <input type="hidden" id="wo-rate" value="6.5" />
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Durasi (Menit)</label>
+              <input id="wo-duration" type="number" min="5" max="300" value="60" oninput="autoEstimateBurn()" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-orange-500 mb-1">Estimasi Terbakar (kcal)</label>
+              <input id="wo-calories" type="number" min="10" max="3000" value="390" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-orange-500/40 rounded-xl px-3 py-2.5 focus:outline-none focus:border-orange-500" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Catatan Latihan (Opsional)</label>
+            <input id="wo-notes" type="text" placeholder="Contoh: Upper Body + Pull-ups, atau Padel 2 jam seru" class="w-full text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-500" />
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-orange-500/20 transition active:scale-98 flex items-center justify-center gap-2">
+            <i data-lucide="flame" class="w-4 h-4"></i> Simpan Aktivitas Olahraga
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- VIEW 4: PENGATURAN TARGET & KALKULATOR BMR -->
+    <!-- ========================================== -->
+    <section id="view-settings" class="hidden space-y-4">
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="font-display font-bold text-base">Pengaturan Profil & Target</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Sesuaikan target kalori & protein masing-masing</p>
+          </div>
+          <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button type="button" onclick="loadSettingsForUser('verdi')" id="set-tab-verdi" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">Verdi</button>
+            <button type="button" onclick="loadSettingsForUser('nonit')" id="set-tab-nonit" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-500">Nonit</button>
+          </div>
+        </div>
+
+        <form onsubmit="saveUserProfileSettings(event)" class="space-y-3.5">
+          <div class="grid grid-cols-3 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Berat Badan (kg)</label>
+              <input id="set-weight" type="number" step="0.1" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tinggi (cm)</label>
+              <input id="set-height" type="number" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Usia (thn)</label>
+              <input id="set-age" type="number" required class="w-full text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Goal Utama</label>
+            <select id="set-goal" class="w-full text-sm font-semibold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5">
+              <option value="surplus">Surplus / Clean Bulking (+250 s/d +350 kcal)</option>
+              <option value="deficit">Defisit / Cutting (-300 s/d -500 kcal)</option>
+              <option value="maintenance">Maintenance / Lean Toning (±0 kcal)</option>
+            </select>
+          </div>
+
+          <!-- Kalkulator Rekomendasi Cepat -->
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-between gap-2">
+            <div>
+              <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400">Hitung Otomatis Rekomendasi</p>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400">Berdasarkan BMR, aktivitas & 2.0g/kg BB protein</p>
+            </div>
+            <button type="button" onclick="calculateRecommendedMacros()" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs shrink-0">
+              Terapkan
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Target Kalori Harian (kcal)</label>
+              <input id="set-target-cal" type="number" required class="w-full text-sm font-extrabold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-emerald-500 mb-1">Target Protein Harian (g)</label>
+              <input id="set-target-protein" type="number" required class="w-full text-sm font-extrabold bg-slate-100 dark:bg-slate-800 border border-emerald-500/40 rounded-xl px-3 py-2.5" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kode PIN Akses Profil (4 Digit)</label>
+            <input id="set-pin" type="text" inputmode="numeric" maxlength="4" pattern="\d{4}" required class="w-32 font-mono text-sm font-bold bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2" />
+          </div>
+
+          <button type="submit" class="w-full py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/20 transition">
+            Simpan Perubahan Profil
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION BAR (MOBILE-FIRST) -->
+  <nav class="fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-slate-950/90 glass-card border-t border-slate-200 dark:border-slate-800/90 px-2 py-2">
+    <div class="max-w-lg mx-auto grid grid-cols-4 gap-1">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-500 font-bold">
+        <i data-lucide="layout-dashboard" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Dashboard</span>
+      </button>
+      <button onclick="switchTab('food')" id="nav-food" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium">
+        <i data-lucide="utensils" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Catat Makan</span>
+      </button>
+      <button onclick="switchTab('workout')" id="nav-workout" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium">
+        <i data-lucide="dumbbell" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Workout</span>
+      </button>
+      <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium">
+        <i data-lucide="sliders-horizontal" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Target</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- CUSTOM NUDGE MODAL -->
+  <div id="nudge-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-display font-bold text-base" id="nudge-modal-title">Kirim Pengingat ke Pasangan</h3>
+        <button onclick="closeNudgeModal()" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Pesan ini akan langsung muncul sebagai notifikasi penting di layar HP pasangan saat membuka aplikasi.</p>
+      <textarea id="custom-nudge-text" rows="3" placeholder="Tulis pesan pengingat atau penyemangat..." class="w-full text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 focus:outline-none focus:border-emerald-500 mb-3"></textarea>
+      <div class="flex gap-2">
+        <button onclick="closeNudgeModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs">Batal</button>
+        <button onclick="submitCustomNudge()" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">Kirim Sekarang</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE & APPLICATION LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==========================================
+    // 1. INITIALIZE FIREBASE & AUTHENTICATION
+    // ==========================================
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'duofit-verdi-nonit-app';
+    let firebaseConfig = {};
+    try {
+      firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    } catch (e) {
+      console.error("Config parse error:", e);
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentFirebaseUser = null;
+
+    // Default Household Profiles
+    const DEFAULT_PROFILES = {
+      verdi: {
+        id: 'verdi',
+        name: 'Verdi',
+        gender: 'male',
+        weight: 70,
+        height: 175,
+        age: 30,
+        goal: 'surplus', // Clean Bulking
+        targetCalories: 2500,
+        targetProtein: 145,
+        pin: '1234'
+      },
+      nonit: {
+        id: 'nonit',
+        name: 'Nonit',
+        gender: 'female',
+        weight: 54,
+        height: 162,
+        age: 29,
+        goal: 'maintenance', // Lean Toning
+        targetCalories: 1750,
+        targetProtein: 105,
+        pin: '1234'
+      }
+    };
+
+    const DEFAULT_PRESETS = [
+      { id: 'p1', name: 'Whey Protein (1 Scoop)', calories: 120, protein: 25, carbs: 2, fat: 1.5, meal: 'Snack/Suplemen', icon: '🥤' },
+      { id: 'p2', name: 'Creatine Monohydrate 5g', calories: 0, protein: 0, carbs: 0, fat: 0, meal: 'Snack/Suplemen', icon: '⚡' },
+      { id: 'p3', name: 'Dada Ayam 150g', calories: 245, protein: 46, carbs: 0, fat: 5.5, meal: 'Makan Siang', icon: '🍗' },
+      { id: 'p4', name: 'Telur Rebus (2 Butir)', calories: 155, protein: 13, carbs: 1, fat: 11, meal: 'Sarapan', icon: '🥚' },
+      { id: 'p5', name: 'Nasi Putih 150g', calories: 195, protein: 4, carbs: 42, fat: 0.4, meal: 'Makan Siang', icon: '🍚' },
+      { id: 'p6', name: 'Oatmeal 50g + Pisang', calories: 290, protein: 8, carbs: 55, fat: 4, meal: 'Sarapan', icon: '🥣' }
+    ];
+
+    // Global Reactive App State
+    window.appState = {
+      activeUser: 'verdi', // 'verdi' or 'nonit' (who holds this phone)
+      pendingLoginUser: 'verdi',
+      selectedDate: getTodayDateStr(),
+      dashboardLogFilter: 'verdi',
+      historyUser: 'verdi',
+      logTargetUser: 'verdi',
+      settingsUser: 'verdi',
+      profiles: JSON.parse(JSON.stringify(DEFAULT_PROFILES)),
+      presets: [...DEFAULT_PRESETS],
+      foodLogs: [],
+      workoutLogs: [],
+      notes: [],
+      nudges: []
+    };
+
+    function getTodayDateStr() {
+      const now = new Date();
+      const offset = now.getTimezoneOffset() * 60000;
+      return new Date(now - offset).toISOString().split('T')[0];
+    }
+
+    // Auth Flow (Rule 3: Auth Before Queries)
+    async function initAuthAndSync() {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+        showToast("Gagal terhubung ke server, mencoba ulang...", "error");
+      }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentFirebaseUser = user;
+        const dot = document.getElementById('connection-dot');
+        const txt = document.getElementById('connection-text');
+        if (dot) {
+          dot.classList.remove('bg-amber-400', 'animate-ping');
+          dot.classList.add('bg-emerald-400');
+        }
+        if (txt) txt.textContent = "Terhubung ke Cloud Sync Real-time";
+        setupFirestoreListeners();
+      }
+    });
+
+    // ==========================================
+    // 2. FIRESTORE REAL-TIME LISTENERS (RULE 1 & 2)
+    // ==========================================
+    function setupFirestoreListeners() {
+      if (!currentFirebaseUser) return;
+
+      // Public Shared Household Space: /artifacts/{appId}/public/data/...
+      const profilesCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_profiles');
+      const foodCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_food_logs');
+      const workoutCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_workout_logs');
+      const notesCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_notes');
+      const nudgesCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_nudges');
+      const presetsCol = collection(db, 'artifacts', appId, 'public', 'data', 'duofit_presets');
+
+      // 1. Profiles Listener
+      onSnapshot(profilesCol, async (snap) => {
+        if (snap.empty) {
+          // Seed initial profiles for Verdi & Nonit
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'duofit_profiles', 'verdi'), DEFAULT_PROFILES.verdi);
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'duofit_profiles', 'nonit'), DEFAULT_PROFILES.nonit);
+        } else {
+          snap.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.id === 'verdi' || data.id === 'nonit') {
+              window.appState.profiles[data.id] = { ...DEFAULT_PROFILES[data.id], ...data };
+            }
+          });
+          renderAll();
+        }
+      }, (err) => console.error("Profiles snapshot error:", err));
+
+      // 2. Presets Listener
+      onSnapshot(presetsCol, (snap) => {
+        const customPresets = [];
+        snap.forEach(d => customPresets.push({ id: d.id, ...d.data() }));
+        window.appState.presets = [...DEFAULT_PRESETS, ...customPresets];
+        renderFoodPresets();
+      }, (err) => console.error("Presets error:", err));
+
+      // 3. Food Logs Listener (Fetch all & filter in JS per Rule 2)
+      onSnapshot(foodCol, (snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        window.appState.foodLogs = list;
+        renderAll();
+      }, (err) => console.error("Food logs error:", err));
+
+      // 4. Workout Logs Listener
+      onSnapshot(workoutCol, (snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        window.appState.workoutLogs = list;
+        renderAll();
+      }, (err) => console.error("Workout logs error:", err));
+
+      // 5. Shared Notes Listener
+      onSnapshot(notesCol, (snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        window.appState.notes = list;
+        renderSharedNotes();
+      }, (err) => console.error("Notes error:", err));
+
+      // 6. Nudges Listener
+      onSnapshot(nudgesCol, (snap) => {
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        window.appState.nudges = list;
+        renderNudgeBanner();
+      }, (err) => console.error("Nudges error:", err));
+    }
+
+    // ==========================================
+    // 3. PROFILE LOGIN & PIN GATE LOGIC
+    // ==========================================
+    window.selectLoginUser = function(userId) {
+      window.appState.pendingLoginUser = userId;
+      const profile = window.appState.profiles[userId];
+      document.getElementById('user-select-step').classList.add('hidden');
+      document.getElementById('pin-step').classList.remove('hidden');
+      
+      const badge = document.getElementById('pin-user-badge');
+      badge.textContent = profile.name;
+      badge.className = userId === 'verdi' 
+        ? 'text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300'
+        : 'text-xs font-bold px-3 py-1 rounded-full bg-rose-500/20 text-rose-300';
+      
+      document.getElementById('pin-hint').textContent = profile.pin || '1234';
+      const pinInput = document.getElementById('pin-input');
+      pinInput.value = profile.pin || '1234'; // Pre-fill for convenience, user can clear/change
+      pinInput.focus();
+    };
+
+    window.backToUserSelect = function() {
+      document.getElementById('pin-step').classList.add('hidden');
+      document.getElementById('user-select-step').classList.remove('hidden');
+    };
+
+    window.verifyPinAndEnter = function() {
+      const userId = window.appState.pendingLoginUser;
+      const profile = window.appState.profiles[userId];
+      const enteredPin = document.getElementById('pin-input').value.trim();
+      const expectedPin = profile.pin || '1234';
+
+      if (enteredPin !== expectedPin) {
+        showToast("PIN salah! Silakan cek kembali.", "error");
+        return;
+      }
+
+      window.appState.activeUser = userId;
+      window.appState.dashboardLogFilter = userId;
+      window.appState.historyUser = userId;
+      window.appState.logTargetUser = userId;
+      window.appState.settingsUser = userId;
+
+      document.getElementById('profile-gate').classList.add('hidden');
+      updateActiveUserUI();
+      renderAll();
+      showToast(`Selamat datang, ${profile.name}! Sinkronisasi aktif.`, "success");
+    };
+
+    window.openProfileGate = function() {
+      document.getElementById('user-select-step').classList.remove('hidden');
+      document.getElementById('pin-step').classList.add('hidden');
+      document.getElementById('profile-gate').classList.remove('hidden');
+    };
+
+    function updateActiveUserUI() {
+      const u = window.appState.activeUser;
+      const partner = u === 'verdi' ? 'Nonit' : 'Verdi';
+      const pill = document.getElementById('active-user-pill');
+      const avatar = document.getElementById('active-user-avatar');
+      const name = document.getElementById('active-user-name');
+
+      if (u === 'verdi') {
+        pill.className = "flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold";
+        avatar.className = "w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center text-[11px] font-extrabold";
+        avatar.textContent = "V";
+        name.textContent = "Verdi";
+      } else {
+        pill.className = "flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold";
+        avatar.className = "w-5 h-5 rounded-full bg-rose-400 text-slate-950 flex items-center justify-center text-[11px] font-extrabold";
+        avatar.textContent = "N";
+        name.textContent = "Nonit";
+      }
+
+      document.getElementById('nudge-target-subtitle').textContent = `Kirim pengingat instan ke HP ${partner}`;
+      document.getElementById('nudge-modal-title').textContent = `Kirim Pengingat ke ${partner}`;
+      setLogTargetUser(u);
+      loadSettingsForUser(u);
+    }
+
+    // ==========================================
+    // 4. CALCULATIONS & DASHBOARD RENDERING
+    // ==========================================
+    function getDailyStats(userId, dateStr) {
+      const profile = window.appState.profiles[userId];
+      const foods = window.appState.foodLogs.filter(f => f.userId === userId && f.date === dateStr);
+      const workouts = window.appState.workoutLogs.filter(w => w.userId === userId && w.date === dateStr);
+
+      const foodCalories = foods.reduce((sum, item) => sum + (Number(item.calories) || 0), 0);
+      const protein = foods.reduce((sum, item) => sum + (Number(item.protein) || 0), 0);
+      const carbs = foods.reduce((sum, item) => sum + (Number(item.carbs) || 0), 0);
+      const fat = foods.reduce((sum, item) => sum + (Number(item.fat) || 0), 0);
+      const burnedCalories = workouts.reduce((sum, item) => sum + (Number(item.calories) || 0), 0);
+
+      // Net Calories = Food Intake - Workout Burned
+      const netCalories = foodCalories - burnedCalories;
+      // Diff against target: Positive = Surplus vs Target, Negative = Deficit vs Target
+      const diffFromTarget = netCalories - profile.targetCalories;
+      const remainingCalories = profile.targetCalories - netCalories;
+      const proteinPct = Math.min(100, Math.round((protein / profile.targetProtein) * 100));
+
+      return {
+        profile,
+        foods,
+        workouts,
+        foodCalories,
+        burnedCalories,
+        netCalories,
+        diffFromTarget,
+        remainingCalories,
+        protein: Math.round(protein * 10) / 10,
+        carbs: Math.round(carbs * 10) / 10,
+        fat: Math.round(fat * 10) / 10,
+        proteinPct
+      };
+    }
+
+    function renderDualPartnerCards() {
+      const container = document.getElementById('dual-cards-container');
+      const dateStr = window.appState.selectedDate;
+      
+      // Put activeUser card on top so user sees theirs first, followed immediately by partner's card
+      const order = window.appState.activeUser === 'verdi' ? ['verdi', 'nonit'] : ['nonit', 'verdi'];
+
+      container.innerHTML = order.map(uid => {
+        const stats = getDailyStats(uid, dateStr);
+        const isMe = uid === window.appState.activeUser;
+        const isVerdi = uid === 'verdi';
+        
+        const goalLabels = {
+          surplus: 'Clean Bulk (Surplus)',
+          deficit: 'Cutting (Defisit)',
+          maintenance: 'Lean Toning'
+        };
+
+        // Determine Surplus / Deficit status badge
+        let balanceBadge = '';
+        if (stats.netCalories === 0 && stats.foodCalories === 0) {
+          balanceBadge = `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">Belum Ada Log</span>`;
+        } else if (stats.diffFromTarget >= 0) {
+          balanceBadge = `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300">Surplus +${stats.diffFromTarget} kcal</span>`;
+        } else {
+          balanceBadge = `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300">Defisit ${stats.diffFromTarget} kcal</span>`;
+        }
+
+        const calProgress = Math.min(100, Math.max(0, Math.round((stats.netCalories / stats.profile.targetCalories) * 100)));
+        const proteinAchieved = stats.protein >= stats.profile.targetProtein;
+
+        return `
+          <div class="rounded-3xl bg-white dark:bg-slate-900 border ${isMe ? (isVerdi ? 'border-emerald-500/50' : 'border-rose-400/50') : 'border-slate-200 dark:border-slate-800'} p-4 shadow-sm relative overflow-hidden">
+            <!-- Header Kartu -->
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-2xl ${isVerdi ? 'bg-gradient-to-tr from-emerald-500 to-cyan-500' : 'bg-gradient-to-tr from-rose-400 to-amber-400'} flex items-center justify-center text-slate-950 font-extrabold text-base shadow">
+                  ${stats.profile.name[0]}
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <h3 class="font-display font-extrabold text-base">${stats.profile.name}</h3>
+                    ${isMe ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Kamu</span>' : '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-500">Pasangan</span>'}
+                  </div>
+                  <p class="text-[11px] text-slate-500 dark:text-slate-400">${goalLabels[stats.profile.goal]} • Target ${stats.profile.targetCalories} kcal</p>
+                </div>
+              </div>
+              ${balanceBadge}
+            </div>
+
+            <!-- Formula Kalori: Masuk - Terbakar = Net -->
+            <div class="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/70 dark:border-slate-800/80 mb-3 text-center">
+              <div>
+                <span class="block text-[10px] text-slate-500 uppercase font-semibold">Masuk</span>
+                <span class="font-display font-extrabold text-sm text-slate-800 dark:text-slate-100">${stats.foodCalories}</span>
+                <span class="text-[10px] text-slate-400">kcal</span>
+              </div>
+              <div class="border-x border-slate-200 dark:border-slate-800">
+                <span class="block text-[10px] text-orange-500 uppercase font-semibold">Workout</span>
+                <span class="font-display font-extrabold text-sm text-orange-500">-${stats.burnedCalories}</span>
+                <span class="text-[10px] text-slate-400">kcal</span>
+              </div>
+              <div>
+                <span class="block text-[10px] text-emerald-500 uppercase font-semibold">Net Kalori</span>
+                <span class="font-display font-extrabold text-sm text-emerald-600 dark:text-emerald-400">${stats.netCalories}</span>
+                <span class="text-[10px] text-slate-400">/ ${stats.profile.targetCalories}</span>
+              </div>
+            </div>
+
+            <!-- Progress Bars: Kalori & Protein -->
+            <div class="space-y-2.5">
+              <!-- Bar Kalori -->
+              <div>
+                <div class="flex justify-between text-[11px] font-semibold mb-1">
+                  <span class="text-slate-600 dark:text-slate-300">Kuota Kalori Harian (${calProgress}%)</span>
+                  <span class="text-slate-500 dark:text-slate-400">
+                    ${stats.remainingCalories >= 0 ? `Sisa ${stats.remainingCalories} kcal` : `Lebih +${Math.abs(stats.remainingCalories)} kcal`}
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full rounded-full ${isVerdi ? 'bg-cyan-500' : 'bg-rose-400'} transition-all duration-500" style="width: ${calProgress}%"></div>
+                </div>
+              </div>
+
+              <!-- Bar Protein -->
+              <div>
+                <div class="flex justify-between text-[11px] font-semibold mb-1">
+                  <span class="flex items-center gap-1 ${proteinAchieved ? 'text-emerald-500 font-bold' : 'text-slate-700 dark:text-slate-200'}">
+                    Protein Harian ${proteinAchieved ? '✓ Tercapai!' : ''}
+                  </span>
+                  <span class="font-bold ${proteinAchieved ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-200'}">
+                    ${stats.protein}g / ${stats.profile.targetProtein}g (${stats.proteinPct}%)
+                  </span>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full rounded-full ${proteinAchieved ? 'bg-emerald-500' : 'bg-amber-500'} transition-all duration-500" style="width: ${stats.proteinPct}%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ringkasan Workout & Quick Action -->
+            <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+              <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate flex-1">
+                ${stats.workouts.length > 0 
+                  ? `🔥 <span class="font-semibold text-slate-700 dark:text-slate-200">${stats.workouts.map(w => w.type).join(', ')}</span> (${stats.workouts.reduce((a,b)=>a+Number(b.duration),0)} mnt)`
+                  : '💤 Belum ada aktivitas gym/olahraga hari ini'}
+              </div>
+              <button onclick="quickAddForUser('${uid}')" class="shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 transition">
+                + Catat
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDailyLogDetail() {
+      const uid = window.appState.dashboardLogFilter;
+      const stats = getDailyStats(uid, window.appState.selectedDate);
+
+      // Update Tab styles
+      const btnV = document.getElementById('filter-log-verdi');
+      const btnN = document.getElementById('filter-log-nonit');
+      if (uid === 'verdi') {
+        btnV.className = "px-3 py-1 rounded-lg text-xs font-bold transition bg-emerald-500 text-slate-950";
+        btnN.className = "px-3 py-1 rounded-lg text-xs font-bold transition text-slate-500 dark:text-slate-400";
+      } else {
+        btnN.className = "px-3 py-1 rounded-lg text-xs font-bold transition bg-rose-400 text-slate-950";
+        btnV.className = "px-3 py-1 rounded-lg text-xs font-bold transition text-slate-500 dark:text-slate-400";
+      }
+
+      // Macro breakdown cards
+      document.getElementById('selected-user-macro-breakdown').innerHTML = `
+        <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+          <span class="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">Protein</span>
+          <span class="font-display font-extrabold text-sm">${stats.protein}g</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-center">
+          <span class="block text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase">Karbohidrat</span>
+          <span class="font-display font-extrabold text-sm">${stats.carbs}g</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+          <span class="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Lemak</span>
+          <span class="font-display font-extrabold text-sm">${stats.fat}g</span>
+        </div>
+      `;
+
+      const listEl = document.getElementById('daily-logs-list');
+      if (stats.foods.length === 0 && stats.workouts.length === 0) {
+        listEl.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Belum ada catatan makan atau workout untuk ${stats.profile.name} pada tanggal ini.</p>`;
+        return;
+      }
+
+      let html = '';
+      if (stats.workouts.length > 0) {
+        html += `<div class="space-y-1.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-orange-500">Aktivitas & Olahraga</p>
+          ${stats.workouts.map(w => `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20">
+              <div class="min-w-0 pr-2">
+                <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${w.type} • ${w.duration} menit</p>
+                ${w.notes ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">${w.notes}</p>` : ''}
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-orange-500">-${w.calories} kcal</span>
+                <button onclick="deleteLog('duofit_workout_logs', '${w.id}')" class="p-1 text-slate-400 hover:text-rose-500" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      if (stats.foods.length > 0) {
+        html += `<div class="space-y-1.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Asupan Nutrisi & Suplemen</p>
+          ${stats.foods.map(f => `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700/70">
+              <div class="min-w-0 pr-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">${f.meal || 'Makan'}</span>
+                  <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${f.name}</p>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span class="text-emerald-500 font-bold">${f.protein}g P</span> • ${f.carbs || 0}g K • ${f.fat || 0}g L
+                </p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-slate-700 dark:text-slate-200">${f.calories} kcal</span>
+                <button onclick="deleteLog('duofit_food_logs', '${f.id}')" class="p-1 text-slate-400 hover:text-rose-500" title="Hapus">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+      }
+
+      listEl.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function renderWeeklyHistory() {
+      const uid = window.appState.historyUser;
+      const btnV = document.getElementById('hist-btn-verdi');
+      const btnN = document.getElementById('hist-btn-nonit');
+      if (uid === 'verdi') {
+        btnV.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950";
+        btnN.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400";
+      } else {
+        btnN.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-400 text-slate-950";
+        btnV.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400";
+      }
+
+      const container = document.getElementById('weekly-history-container');
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const offset = d.getTimezoneOffset() * 60000;
+        const dateStr = new Date(d - offset).toISOString().split('T')[0];
+        const dayName = d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+        days.push({ dateStr, dayName, isToday: i === 0 });
+      }
+
+      container.innerHTML = days.map(day => {
+        const stats = getDailyStats(uid, day.dateStr);
+        const hasData = stats.foodCalories > 0 || stats.burnedCalories > 0;
+        const proteinOk = stats.protein >= stats.profile.targetProtein;
+        const diffLabel = !hasData ? '-' : (stats.diffFromTarget >= 0 ? `+${stats.diffFromTarget}` : `${stats.diffFromTarget}`);
+        const diffColor = !hasData ? 'text-slate-400' : (stats.diffFromTarget >= 0 ? 'text-emerald-500' : 'text-amber-500');
+
+        return `
+          <div onclick="jumpToDate('${day.dateStr}')" class="cursor-pointer flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border ${day.isToday ? 'border-emerald-500/40' : 'border-transparent'} transition">
+            <div class="w-24 shrink-0">
+              <span class="text-xs font-bold ${day.isToday ? 'text-emerald-500' : ''}">${day.isToday ? 'Hari Ini' : day.dayName}</span>
+            </div>
+            <div class="flex-1 px-2">
+              <div class="flex items-center justify-between text-[10px] mb-1">
+                <span class="text-slate-500">Protein: <strong class="${proteinOk ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'}">${stats.protein}g</strong>/${stats.profile.targetProtein}g</span>
+                <span class="font-bold ${diffColor}">${diffLabel} kcal</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div class="h-full rounded-full ${proteinOk ? 'bg-emerald-500' : 'bg-sky-500'}" style="width: ${stats.proteinPct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // 5. FOOD & WORKOUT ACTIONS (FIRESTORE WRITES)
+    // ==========================================
+    function renderFoodPresets() {
+      const grid = document.getElementById('food-presets-grid');
+      grid.innerHTML = window.appState.presets.map(p => `
+        <button type="button" onclick="quickAddPreset('${p.id}')" class="text-left p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-emerald-500/15 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 transition active:scale-95">
+          <div class="flex items-center justify-between">
+            <span class="text-sm">${p.icon || '🍽️'}</span>
+            <span class="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400">+${p.protein}g P</span>
+          </div>
+          <p class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate mt-1">${p.name}</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400">${p.calories} kcal • ${p.carbs}g K • ${p.fat}g L</p>
+        </button>
+      `).join('');
+    }
+
+    window.quickAddPreset = async function(presetId) {
+      if (!currentFirebaseUser) return;
+      const preset = window.appState.presets.find(p => p.id === presetId);
+      if (!preset) return;
+
+      const targetUid = window.appState.logTargetUser;
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_food_logs'), {
+          userId: targetUid,
+          date: window.appState.selectedDate,
+          name: preset.name,
+          meal: preset.meal || 'Snack/Suplemen',
+          calories: Number(preset.calories),
+          protein: Number(preset.protein),
+          carbs: Number(preset.carbs || 0),
+          fat: Number(preset.fat || 0),
+          loggedBy: window.appState.activeUser,
+          createdAt: Date.now()
+        });
+        showToast(`+${preset.name} (${preset.protein}g P) dicatat untuk ${window.appState.profiles[targetUid].name}!`, "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Gagal menyimpan preset.", "error");
+      }
+    };
+
+    window.handleAddFood = async function(e) {
+      e.preventDefault();
+      if (!currentFirebaseUser) return;
+
+      const targetUid = window.appState.logTargetUser;
+      const name = document.getElementById('food-name').value.trim();
+      const meal = document.getElementById('food-meal').value;
+      const calories = Number(document.getElementById('food-cal').value) || 0;
+      const protein = Number(document.getElementById('food-protein').value) || 0;
+      const carbs = Number(document.getElementById('food-carbs').value) || 0;
+      const fat = Number(document.getElementById('food-fat').value) || 0;
+      const savePreset = document.getElementById('save-as-preset').checked;
+
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_food_logs'), {
+          userId: targetUid,
+          date: window.appState.selectedDate,
+          name,
+          meal,
+          calories,
+          protein,
+          carbs,
+          fat,
+          loggedBy: window.appState.activeUser,
+          createdAt: Date.now()
+        });
+
+        if (savePreset) {
+          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_presets'), {
+            name,
+            meal,
+            calories,
+            protein,
+            carbs,
+            fat,
+            icon: '⭐'
+          });
+        }
+
+        e.target.reset();
+        document.getElementById('food-carbs').value = 0;
+        document.getElementById('food-fat').value = 0;
+        showToast(`Berhasil mencatat ${name} untuk ${window.appState.profiles[targetUid].name}!`, "success");
+        switchTab('dashboard');
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal menyimpan log makanan.", "error");
+      }
+    };
+
+    window.selectWorkoutType = function(type, ratePerMin) {
+      document.getElementById('wo-type').value = type;
+      document.getElementById('wo-rate').value = ratePerMin;
+      
+      document.querySelectorAll('.wo-type-btn').forEach(btn => {
+        btn.className = "wo-type-btn p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex flex-col items-center gap-1 text-center transition";
+      });
+      event.currentTarget.className = "wo-type-btn active-wo p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-500/10 flex flex-col items-center gap-1 text-center transition";
+      autoEstimateBurn();
+    };
+
+    window.autoEstimateBurn = function() {
+      const dur = Number(document.getElementById('wo-duration').value) || 0;
+      const rate = Number(document.getElementById('wo-rate').value) || 6.5;
+      const targetUid = window.appState.logTargetUser;
+      const weightFactor = (window.appState.profiles[targetUid]?.weight || 65) / 68;
+      document.getElementById('wo-calories').value = Math.round(dur * rate * weightFactor);
+    };
+
+    window.handleAddWorkout = async function(e) {
+      e.preventDefault();
+      if (!currentFirebaseUser) return;
+
+      const targetUid = window.appState.logTargetUser;
+      const type = document.getElementById('wo-type').value;
+      const duration = Number(document.getElementById('wo-duration').value) || 30;
+      const calories = Number(document.getElementById('wo-calories').value) || 150;
+      const notes = document.getElementById('wo-notes').value.trim();
+
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_workout_logs'), {
+          userId: targetUid,
+          date: window.appState.selectedDate,
+          type,
+          duration,
+          calories,
+          notes,
+          loggedBy: window.appState.activeUser,
+          createdAt: Date.now()
+        });
+
+        document.getElementById('wo-notes').value = '';
+        showToast(`Workout ${type} (-${calories} kcal) tersimpan!`, "success");
+        switchTab('dashboard');
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal menyimpan workout.", "error");
+      }
+    };
+
+    window.deleteLog = async function(colName, docId) {
+      if (!currentFirebaseUser) return;
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', colName, docId));
+        showToast("Catatan berhasil dihapus.", "info");
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal menghapus catatan.", "error");
+      }
+    };
+
+    // ==========================================
+    // 6. NUDGES (SALING INGATKAN) & SHARED NOTES
+    // ==========================================
+    function renderNudgeBanner() {
+      const me = window.appState.activeUser;
+      // Find newest unread nudge addressed TO me
+      const unread = window.appState.nudges.find(n => n.toUser === me && !n.read);
+      const banner = document.getElementById('partner-nudge-banner');
+
+      if (!unread) {
+        banner.classList.add('hidden');
+        return;
+      }
+
+      const senderName = window.appState.profiles[unread.fromUser]?.name || 'Pasangan';
+      const timeStr = new Date(unread.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      document.getElementById('nudge-sender-title').textContent = `Pengingat dari ${senderName}`;
+      document.getElementById('nudge-time').textContent = timeStr;
+      document.getElementById('nudge-message-text').textContent = `"${unread.message}"`;
+      banner.dataset.nudgeId = unread.id;
+      banner.classList.remove('hidden');
+    }
+
+    window.sendQuickNudge = async function(msg) {
+      if (!currentFirebaseUser) return;
+      const fromUser = window.appState.activeUser;
+      const toUser = fromUser === 'verdi' ? 'nonit' : 'verdi';
+
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_nudges'), {
+          fromUser,
+          toUser,
+          message: msg,
+          read: false,
+          createdAt: Date.now()
+        });
+        showToast(`Pengingat terkirim ke HP ${window.appState.profiles[toUser].name}!`, "success");
+      } catch (e) {
+        console.error(e);
+        showToast("Gagal mengirim nudge.", "error");
+      }
+    };
+
+    window.openNudgeModal = function() {
+      document.getElementById('custom-nudge-text').value = '';
+      document.getElementById('nudge-modal').classList.remove('hidden');
+      document.getElementById('custom-nudge-text').focus();
+    };
+
+    window.closeNudgeModal = function() {
+      document.getElementById('nudge-modal').classList.add('hidden');
+    };
+
+    window.submitCustomNudge = async function() {
+      const txt = document.getElementById('custom-nudge-text').value.trim();
+      if (!txt) return;
+      closeNudgeModal();
+      await sendQuickNudge(txt);
+    };
+
+    window.acknowledgeNudge = async function() {
+      const banner = document.getElementById('partner-nudge-banner');
+      const id = banner.dataset.nudgeId;
+      if (!id || !currentFirebaseUser) return;
+      try {
+        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'duofit_nudges', id), {
+          read: true
+        });
+        banner.classList.add('hidden');
+        showToast("Pengingat ditandai selesai ✓", "success");
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    function renderSharedNotes() {
+      const container = document.getElementById('shared-notes-list');
+      const dateNotes = window.appState.notes.filter(n => n.date === window.appState.selectedDate);
+
+      if (dateNotes.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-2">Belum ada catatan bersama hari ini. Saling beri semangat yuk!</p>`;
+        return;
+      }
+
+      container.innerHTML = dateNotes.map(n => {
+        const isVerdi = n.author === 'verdi';
+        const time = new Date(n.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="p-2.5 rounded-2xl ${isVerdi ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="text-[11px] font-extrabold ${isVerdi ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-300'}">${isVerdi ? 'Verdi' : 'Nonit'}</span>
+              <span class="text-[10px] text-slate-400">${time}</span>
+            </div>
+            <p class="text-xs text-slate-800 dark:text-slate-100 leading-relaxed">${n.text}</p>
+          </div>
+        `;
+      }).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    window.submitSharedNote = async function(e) {
+      e.preventDefault();
+      if (!currentFirebaseUser) return;
+      const input = document.getElementById('shared-note-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      try {
+        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'duofit_notes'), {
+          author: window.appState.activeUser,
+          date: window.appState.selectedDate,
+          text,
+          createdAt: Date.now()
+        });
+        input.value = '';
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal mengirim catatan.", "error");
+      }
+    };
+
+    // ==========================================
+    // 7. SETTINGS & BMR/TDEE CALCULATOR
+    // ==========================================
+    window.loadSettingsForUser = function(uid) {
+      window.appState.settingsUser = uid;
+      const p = window.appState.profiles[uid];
+
+      const tabV = document.getElementById('set-tab-verdi');
+      const tabN = document.getElementById('set-tab-nonit');
+      if (uid === 'verdi') {
+        tabV.className = "px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950";
+        tabN.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-500";
+      } else {
+        tabN.className = "px-3 py-1 rounded-lg text-xs font-bold bg-rose-400 text-slate-950";
+        tabV.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-500";
+      }
+
+      document.getElementById('set-weight').value = p.weight;
+      document.getElementById('set-height').value = p.height;
+      document.getElementById('set-age').value = p.age;
+      document.getElementById('set-goal').value = p.goal;
+      document.getElementById('set-target-cal').value = p.targetCalories;
+      document.getElementById('set-target-protein').value = p.targetProtein;
+      document.getElementById('set-pin').value = p.pin || '1234';
+    };
+
+    window.calculateRecommendedMacros = function() {
+      const uid = window.appState.settingsUser;
+      const weight = Number(document.getElementById('set-weight').value) || 65;
+      const height = Number(document.getElementById('set-height').value) || 170;
+      const age = Number(document.getElementById('set-age').value) || 30;
+      const goal = document.getElementById('set-goal').value;
+
+      // Mifflin-St Jeor BMR
+      let bmr = (10 * weight) + (6.25 * height) - (5 * age) + (uid === 'verdi' ? 5 : -161);
+      // Light-Moderate baseline activity (1.375) because workouts are logged separately
+      let maintenance = Math.round(bmr * 1.375);
+
+      let targetCal = maintenance;
+      if (goal === 'surplus') targetCal = maintenance + 300;
+      if (goal === 'deficit') targetCal = maintenance - 350;
+
+      // Protein recommendation ~2.0g per kg body weight
+      let targetProtein = Math.round(weight * 2.0);
+
+      document.getElementById('set-target-cal').value = targetCal;
+      document.getElementById('set-target-protein').value = targetProtein;
+      showToast(`Rekomendasi dihitung: ${targetCal} kcal & ${targetProtein}g protein.`, "info");
+    };
+
+    window.saveUserProfileSettings = async function(e) {
+      e.preventDefault();
+      if (!currentFirebaseUser) return;
+      const uid = window.appState.settingsUser;
+
+      const updated = {
+        ...window.appState.profiles[uid],
+        weight: Number(document.getElementById('set-weight').value),
+        height: Number(document.getElementById('set-height').value),
+        age: Number(document.getElementById('set-age').value),
+        goal: document.getElementById('set-goal').value,
+        targetCalories: Number(document.getElementById('set-target-cal').value),
+        targetProtein: Number(document.getElementById('set-target-protein').value),
+        pin: document.getElementById('set-pin').value.trim() || '1234'
+      };
+
+      try {
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'duofit_profiles', uid), updated);
+        showToast(`Profil & target ${updated.name} berhasil disimpan!`, "success");
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal menyimpan pengaturan.", "error");
+      }
+    };
+
+    // ==========================================
+    // 8. NAVIGATION, DATE CONTROLS & HELPERS
+    // ==========================================
+    window.switchTab = function(tabName) {
+      ['dashboard', 'food', 'workout', 'settings'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const navBtn = document.getElementById(`nav-${t}`);
+        navBtn.className = "nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-slate-500 dark:text-slate-400 font-medium";
+      });
+
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      const activeNav = document.getElementById(`nav-${tabName}`);
+      activeNav.className = "nav-btn flex flex-col items-center justify-center py-1.5 rounded-xl text-emerald-500 font-bold";
+      
+      if (tabName === 'workout') autoEstimateBurn();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.setLogTargetUser = function(uid) {
+      window.appState.logTargetUser = uid;
+      const name = window.appState.profiles[uid]?.name || uid;
+      document.getElementById('food-for-label').textContent = name;
+
+      ['food-target', 'wo-target'].forEach(prefix => {
+        const bV = document.getElementById(`${prefix}-verdi`);
+        const bN = document.getElementById(`${prefix}-nonit`);
+        if (uid === 'verdi') {
+          bV.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950";
+          bN.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500";
+        } else {
+          bN.className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-400 text-slate-950";
+          bV.className = "px-2.5 py-1 rounded-lg text-xs font-bold text-slate-500";
+        }
+      });
+    };
+
+    window.quickAddForUser = function(uid) {
+      setLogTargetUser(uid);
+      switchTab('food');
+    };
+
+    window.setDashboardLogFilter = function(uid) {
+      window.appState.dashboardLogFilter = uid;
+      renderDailyLogDetail();
+    };
+
+    window.setHistoryUser = function(uid) {
+      window.appState.historyUser = uid;
+      renderWeeklyHistory();
+    };
+
+    window.changeDate = function(delta) {
+      const curr = new Date(window.appState.selectedDate + 'T00:00:00');
+      curr.setDate(curr.getDate() + delta);
+      const offset = curr.getTimezoneOffset() * 60000;
+      window.appState.selectedDate = new Date(curr - offset).toISOString().split('T')[0];
+      updateDateDisplay();
+      renderAll();
+    };
+
+    window.resetToToday = function() {
+      window.appState.selectedDate = getTodayDateStr();
+      updateDateDisplay();
+      renderAll();
+    };
+
+    window.jumpToDate = function(dateStr) {
+      window.appState.selectedDate = dateStr;
+      updateDateDisplay();
+      renderAll();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    function updateDateDisplay() {
+      const today = getTodayDateStr();
+      const sel = window.appState.selectedDate;
+      const dObj = new Date(sel + 'T00:00:00');
+      const formatted = dObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+      
+      document.getElementById('header-date-label').textContent = formatted;
+      document.getElementById('date-btn-text').textContent = sel === today ? 'Hari Ini' : dObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    }
+
+    window.toggleTheme = function() {
+      document.documentElement.classList.toggle('dark');
+    };
+
+    window.showToast = function(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-500 text-slate-950 border-emerald-400',
+        error: 'bg-rose-500 text-white border-rose-400',
+        info: 'bg-slate-800 text-white border-slate-700'
+      };
+      toast.className = `${colors[type] || colors.info} border px-4 py-3 rounded-2xl shadow-xl text-xs font-bold flex items-center justify-between transition-all duration-300 transform translate-y-0 opacity-100`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    };
+
+    function renderAll() {
+      renderDualPartnerCards();
+      renderDailyLogDetail();
+      renderWeeklyHistory();
+      renderSharedNotes();
+      renderNudgeBanner();
+      renderFoodPresets();
+      lucide.createIcons();
+    }
+
+    // Boot Application
+    window.addEventListener('DOMContentLoaded', () => {
+      updateDateDisplay();
+      renderFoodPresets();
+      loadSettingsForUser('verdi');
+      lucide.createIcons();
+      initAuthAndSync();
+    });
+  </script>
+</body>
+</html>

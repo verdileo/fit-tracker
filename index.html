@@ -45,12 +45,12 @@
     <div id="profileSelectBox">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 text-center mb-3">Siapa yang menggunakan HP ini?</p>
       <div class="grid grid-cols-2 gap-3 mb-5">
-        <button onclick="selectProfile('verdi')" class="group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition text-center">
+        <button type="button" onclick="selectProfile('verdi')" class="cursor-pointer group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition text-center">
           <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-slate-950 font-bold text-lg flex items-center justify-center">V</div>
           <div class="font-bold text-base">Verdi</div>
           <div class="text-[11px] text-emerald-400 mt-0.5">Clean Bulk Mode</div>
         </button>
-        <button onclick="selectProfile('nonit')" class="group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-rose-500/60 hover:bg-rose-500/10 transition text-center">
+        <button type="button" onclick="selectProfile('nonit')" class="cursor-pointer group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-rose-500/60 hover:bg-rose-500/10 transition text-center">
           <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-slate-950 font-bold text-lg flex items-center justify-center">N</div>
           <div class="font-bold text-base">Nonit</div>
           <div class="text-[11px] text-rose-400 mt-0.5">Lean Toning Mode</div>
@@ -64,11 +64,12 @@
         <p class="text-sm text-slate-300">Masukkan PIN 4-digit (Default: 1234)</p>
       </div>
       <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+        onkeydown="if(event.key==='Enter') verifyPin()"
         class="w-full text-center tracking-[0.6em] text-2xl font-bold py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-emerald-400 focus:outline-none mb-3" />
       <p id="pinError" class="text-xs text-rose-400 text-center mb-3 hidden">PIN salah, coba lagi.</p>
       <div class="flex gap-2">
-        <button onclick="backToProfiles()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Kembali</button>
-        <button onclick="verifyPin()" class="w-2/3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Masuk</button>
+        <button type="button" onclick="backToProfiles()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Kembali</button>
+        <button type="button" onclick="verifyPin()" class="w-2/3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Masuk</button>
       </div>
     </div>
 
@@ -89,10 +90,10 @@
       <p id="activeDateLabel" class="text-xs text-slate-400 mt-0.5"></p>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="manualRefresh()" title="Sinkronisasi Sekarang" class="p-2 rounded-xl glass text-slate-300 hover:text-emerald-400">
+      <button type="button" onclick="manualRefresh()" title="Sinkronisasi Sekarang" class="p-2 rounded-xl glass text-slate-300 hover:text-emerald-400">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
       </button>
-      <button onclick="logout()" class="px-3 py-1.5 rounded-xl glass text-xs font-semibold text-slate-300">
+      <button type="button" onclick="logout()" class="px-3 py-1.5 rounded-xl glass text-xs font-semibold text-slate-300">
         <span id="currentUserLabel">Verdi</span> • Ganti
       </button>
     </div>
@@ -106,13 +107,13 @@
         <div id="nudgeMessage" class="text-sm text-slate-100 mt-0.5"></div>
       </div>
     </div>
-    <button onclick="dismissNudge()" class="text-xs px-2 py-1 rounded-lg bg-slate-900/60 text-slate-300">OK</button>
+    <button type="button" onclick="dismissNudge()" class="text-xs px-2 py-1 rounded-lg bg-slate-900/60 text-slate-300">OK</button>
   </div>
 
   <div class="flex items-center justify-between glass rounded-2xl p-2 mb-4">
-    <button onclick="changeDate(-1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+    <button type="button" onclick="changeDate(-1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
     <input type="date" id="datePicker" onchange="onDatePick(this.value)" class="bg-transparent text-sm font-semibold text-center text-slate-100 focus:outline-none" />
-    <button onclick="changeDate(1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+    <button type="button" onclick="changeDate(1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
   </div>
 
   <section id="tab-dashboard" class="space-y-4">
@@ -123,22 +124,22 @@
         <i data-lucide="send" class="w-3.5 h-3.5 text-emerald-400"></i> Saling Ingatkan & Kontrol Bersama
       </h3>
       <div class="grid grid-cols-2 gap-2 mb-2.5">
-        <button onclick="sendNudge('Jangan lupa penuhi target protein & minum whey hari ini! 💪')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button type="button" onclick="sendNudge('Jangan lupa penuhi target protein & minum whey hari ini! 💪')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🥤 Ingatkan Protein / Whey
         </button>
-        <button onclick="sendNudge('Sudah minum air putih & creatine 5g hari ini? 💧')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button type="button" onclick="sendNudge('Sudah minum air putih & creatine 5g hari ini? 💧')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           💧 Creatine & Hidrasi
         </button>
-        <button onclick="sendNudge('Yuk jadwal workout / gym / padel hari ini! 🏋️')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button type="button" onclick="sendNudge('Yuk jadwal workout / gym / padel hari ini! 🏋️')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🏋️ Ajak Gym / Olahraga
         </button>
-        <button onclick="sendNudge('Cek sisa kalori malam ini ya, jangan kebablasan! 🥗')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button type="button" onclick="sendNudge('Cek sisa kalori malam ini ya, jangan kebablasan! 🥗')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🥗 Kontrol Kalori Malam
         </button>
       </div>
       <div class="flex gap-2">
         <input id="customNudgeInput" type="text" placeholder="Tulis pesan pengingat untuk pasangan..." class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs focus:outline-none focus:border-emerald-400" />
-        <button onclick="sendCustomNudge()" class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Kirim</button>
+        <button type="button" onclick="sendCustomNudge()" class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Kirim</button>
       </div>
     </div>
 
@@ -146,9 +147,9 @@
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Log Aktivitas & Makan Hari Ini</h3>
         <div class="flex gap-1 text-xs">
-          <button onclick="setLogFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold">Semua</button>
-          <button onclick="setLogFilter('verdi')" id="filter-verdi" class="px-2.5 py-1 rounded-lg text-slate-400">Verdi</button>
-          <button onclick="setLogFilter('nonit')" id="filter-nonit" class="px-2.5 py-1 rounded-lg text-slate-400">Nonit</button>
+          <button type="button" onclick="setLogFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold">Semua</button>
+          <button type="button" onclick="setLogFilter('verdi')" id="filter-verdi" class="px-2.5 py-1 rounded-lg text-slate-400">Verdi</button>
+          <button type="button" onclick="setLogFilter('nonit')" id="filter-nonit" class="px-2.5 py-1 rounded-lg text-slate-400">Nonit</button>
         </div>
       </div>
       <div id="logsList" class="space-y-2"></div>
@@ -188,7 +189,7 @@
         <input id="saveAsPreset" type="checkbox" class="rounded bg-slate-900 border-slate-700 text-emerald-500" />
         Simpan ke daftar Preset Favorit
       </label>
-      <button onclick="addFoodLog()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
+      <button type="button" onclick="addFoodLog()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
         + Simpan Catatan Nutrisi
       </button>
     </div>
@@ -229,7 +230,7 @@
         <label class="text-xs text-slate-400">Catatan Latihan (opsional)</label>
         <input id="woNote" type="text" placeholder="Contoh: Upper body, Garmin 135 bpm" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
       </div>
-      <button onclick="addWorkoutLog()" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">
+      <button type="button" onclick="addWorkoutLog()" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">
         + Simpan Aktivitas Workout
       </button>
     </div>
@@ -272,7 +273,7 @@
       </div>
     </div>
 
-    <button onclick="saveSettings()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
+    <button type="button" onclick="saveSettings()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
       Simpan Perubahan Target & PIN
     </button>
   </section>
@@ -280,19 +281,19 @@
 
 <nav id="bottomNav" class="hidden fixed bottom-0 inset-x-0 glass border-t border-slate-800 z-40">
   <div class="max-w-lg mx-auto grid grid-cols-4 py-2">
-    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-emerald-400">
+    <button type="button" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-emerald-400">
       <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">Pantau</span>
     </button>
-    <button onclick="switchTab('food')" id="nav-food" class="flex flex-col items-center gap-1 text-slate-400">
+    <button type="button" onclick="switchTab('food')" id="nav-food" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="utensils" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">+ Nutrisi</span>
     </button>
-    <button onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center gap-1 text-slate-400">
+    <button type="button" onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="dumbbell" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">+ Gym</span>
     </button>
-    <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400">
+    <button type="button" onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="sliders" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">Target</span>
     </button>
@@ -465,7 +466,7 @@
     renderCoupleCards();
     renderLogs();
     renderPresets();
-    lucide.createIcons();
+    if (window.lucide) lucide.createIcons();
   }
 
   function renderNudge() {
@@ -520,10 +521,181 @@
       const accent = u === "verdi" ? "emerald" : "rose";
 
       return `
-        <div class="glass rounded-2xl p-4 border-l-4 \${u === 'verdi' ? 'border-l-emerald-400' : 'border-l-rose-400'}">
+        <div class="glass rounded-2xl p-4 border-l-4 ${u === 'verdi' ? 'border-l-emerald-400' : 'border-l-rose-400'}">
           <div class="flex items-center justify-between mb-2.5">
             <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-full bg-${accent}-500/20 text-${accent}-300 font-bold text-xs flex items-center justify-center uppercase">\${u[0]}</span>
+              <span class="w-7 h-7 rounded-full bg-${accent}-500/20 text-${accent}-300 font-bold text-xs flex items-center justify-center uppercase">${u[0]}</span>
               <div>
-                <div class="font-bold text-sm">${prof.name}${u === currentUser ? '(Anda)' : ''}</div>
-                <div class
+                <div class="font-bold text-sm">${prof.name} ${u === currentUser ? '(Anda)' : ''}</div>
+                <div class="text-[11px] text-slate-400">Masuk ${calIn} • Bakar ${calOut} kcal</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full ${isSurplus ? 'bg-amber-500/20 text-amber-300' : 'bg-cyan-500/20 text-cyan-300'}">
+                ${isSurplus ? 'Surplus +' + diff : 'Defisit ' + diff} kcal
+              </span>
+              <div class="text-[11px] text-slate-400 mt-1">Net: <strong class="text-slate-200">${netCal}</strong> / ${prof.calTarget}</div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Protein Harian</span>
+              <span class="font-bold text-${accent}-400">${prot}g / ${prof.protTarget}g (${protPct}%)</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+              <div class="h-full bg-${accent}-400 rounded-full transition-all" style="width:${protPct}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function setLogFilter(f) {
+    logFilter = f;
+    ["all", "verdi", "nonit"].forEach(k => {
+      document.getElementById("filter-" + k).className = k === f
+        ? "px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold"
+        : "px-2.5 py-1 rounded-lg text-slate-400";
+    });
+    renderLogs();
+  }
+
+  function renderLogs() {
+    const list = document.getElementById("logsList");
+    let items = appState.logs.filter(l => l.date === selectedDate);
+    if (logFilter !== "all") items = items.filter(l => l.user === logFilter);
+    if (items.length === 0) {
+      list.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">Belum ada catatan pada tanggal ini.</p>`;
+      return;
+    }
+    list.innerHTML = items.slice().reverse().map(item => {
+      const isFood = item.kind === "food";
+      const badgeColor = item.user === "verdi" ? "text-emerald-400 bg-emerald-500/10" : "text-rose-400 bg-rose-500/10";
+      return `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 border border-slate-800">
+          <div class="min-w-0 pr-2">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeColor} uppercase">${item.user}</span>
+              <span class="text-xs font-semibold text-slate-100 truncate">${item.title}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              ${isFood ? `+${item.cal} kcal • ${item.prot}g protein` : `-${item.cal} kcal • ${item.dur} mnt ${item.note ? '• ' + item.note : ''}`}
+            </div>
+          </div>
+          <button type="button" onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `;
+    }).join("");
+    if (window.lucide) lucide.createIcons();
+  }
+
+  function renderPresets() {
+    const grid = document.getElementById("presetGrid");
+    grid.innerHTML = appState.presets.map(p => `
+      <button type="button" onclick="quickAddPreset('${p.id}')" class="text-left p-2.5 rounded-xl bg-slate-900/80 hover:border-emerald-500/50 border border-slate-800 transition">
+        <div class="text-xs font-semibold text-slate-100 truncate">${p.name}</div>
+        <div class="text-[11px] text-emerald-400 mt-0.5">${p.cal} kcal • ${p.prot}g prot</div>
+      </button>
+    `).join("");
+  }
+
+  function quickAddPreset(id) {
+    const p = appState.presets.find(x => x.id === id);
+    const targetUser = document.getElementById("foodUser").value;
+    if (!p) return;
+    appState.logs.push({
+      id: "log_" + Date.now(),
+      date: selectedDate,
+      user: targetUser,
+      kind: "food",
+      title: p.name,
+      cal: p.cal,
+      prot: p.prot
+    });
+    pushToCloud();
+    switchTab("dashboard");
+    renderAll();
+  }
+
+  function addFoodLog() {
+    const user = document.getElementById("foodUser").value;
+    const title = document.getElementById("foodName").value.trim();
+    const cal = Number(document.getElementById("foodCal").value || 0);
+    const prot = Number(document.getElementById("foodProt").value || 0);
+    if (!title) return alert("Isi nama makanan terlebih dahulu.");
+
+    appState.logs.push({ id: "log_" + Date.now(), date: selectedDate, user, kind: "food", title, cal, prot });
+
+    if (document.getElementById("saveAsPreset").checked) {
+      appState.presets.push({ id: "p_" + Date.now(), name: title, cal, prot });
+      document.getElementById("saveAsPreset").checked = false;
+    }
+
+    document.getElementById("foodName").value = "";
+    document.getElementById("foodCal").value = "";
+    document.getElementById("foodProt").value = "";
+    pushToCloud();
+    switchTab("dashboard");
+    renderAll();
+  }
+
+  function addWorkoutLog() {
+    const user = document.getElementById("woUser").value;
+    const title = document.getElementById("woType").value;
+    const dur = Number(document.getElementById("woDur").value || 0);
+    const cal = Number(document.getElementById("woCal").value || 0);
+    const note = document.getElementById("woNote").value.trim();
+
+    appState.logs.push({ id: "log_" + Date.now(), date: selectedDate, user, kind: "workout", title, dur, cal, note });
+    document.getElementById("woDur").value = "";
+    document.getElementById("woCal").value = "";
+    document.getElementById("woNote").value = "";
+    pushToCloud();
+    switchTab("dashboard");
+    renderAll();
+  }
+
+  function deleteLog(id) {
+    appState.logs = appState.logs.filter(l => l.id !== id);
+    pushToCloud();
+    renderAll();
+  }
+
+  function loadSettingsForm() {
+    document.getElementById("setVerdiCal").value = appState.profiles.verdi.calTarget;
+    document.getElementById("setVerdiProt").value = appState.profiles.verdi.protTarget;
+    document.getElementById("setVerdiPin").value = appState.profiles.verdi.pin;
+    document.getElementById("setNonitCal").value = appState.profiles.nonit.calTarget;
+    document.getElementById("setNonitProt").value = appState.profiles.nonit.protTarget;
+    document.getElementById("setNonitPin").value = appState.profiles.nonit.pin;
+  }
+
+  function saveSettings() {
+    appState.profiles.verdi.calTarget = Number(document.getElementById("setVerdiCal").value || 2450);
+    appState.profiles.verdi.protTarget = Number(document.getElementById("setVerdiProt").value || 150);
+    appState.profiles.verdi.pin = document.getElementById("setVerdiPin").value || "1234";
+    appState.profiles.nonit.calTarget = Number(document.getElementById("setNonitCal").value || 1650);
+    appState.profiles.nonit.protTarget = Number(document.getElementById("setNonitProt").value || 105);
+    appState.profiles.nonit.pin = document.getElementById("setNonitPin").value || "1234";
+    pushToCloud();
+    alert("Target dan PIN berhasil disimpan ke Google Sheets!");
+    switchTab("dashboard");
+    renderAll();
+  }
+
+  function manualRefresh() {
+    pullFromCloud();
+  }
+
+  if (window.lucide) lucide.createIcons();
+  if (currentUser && appState.profiles[currentUser]) {
+    enterApp();
+  }
+  pullFromCloud();
+  setInterval(() => { if (!isSyncing) pullFromCloud(); }, 15000);
+</script>
+</body>
+</html>

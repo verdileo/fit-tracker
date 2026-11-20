@@ -455,7 +455,7 @@
       } else if (data && data.empty) {
         await pushToCloud();
       }
-      updateSyncUI(true, "Terhubung • Google Sheets Sync");
+      updateSyncUI(true, "Terhubung");
       renderAll();
     } catch (e) {
       updateSyncUI(false, "Mode Offline (Cache Lokal)");

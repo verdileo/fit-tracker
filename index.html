@@ -31,9 +31,49 @@
 <body class="min-h-screen pb-24 selection:bg-emerald-500/30">
 
 <script>
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtWPvVTnsdq1kKsfhgjeRyoyc0A4CSG1clj27eFgV3P-Qj8Bl_c2nf-rjvoKNBYgyzXw/exec";
+  // =========================================================================
+  // const SHEET_NAME = "DuoFitDB";
+
+function getOrCreateSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.getRange("A1").setValue("STATE_JSON");
+    sheet.getRange("B1").setValue("UPDATED_AT");
+  }
+  return sheet;
+}
+
+function doGet(e) {
+  const sheet = getOrCreateSheet();
+  const rawJson = sheet.getRange("A2").getValue();
+  const output = rawJson ? rawJson : JSON.stringify({ empty: true });
+  return ContentService.createTextOutput(output).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  try {
+    const sheet = getOrCreateSheet();
+    const payload = e.postData.contents;
+    sheet.getRange("A2").setValue(payload);
+    sheet.getRange("B2").setValue(new Date().toISOString());
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+  // =========================================================================
+  const APPS_SCRIPT_URL = "TEMPEL_URL_WEB_APP_ANDA_DI_SINI";
 </script>
 
+<!-- LOGIN / PROFILE GATE -->
 <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b0f17]">
   <div class="w-full max-w-md glass rounded-3xl p-6 shadow-2xl">
     <div class="flex items-center justify-center gap-2.5 mb-2">
@@ -45,12 +85,12 @@
     <div id="profileSelectBox">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 text-center mb-3">Siapa yang menggunakan HP ini?</p>
       <div class="grid grid-cols-2 gap-3 mb-5">
-        <button type="button" onclick="selectProfile('verdi')" class="cursor-pointer group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition text-center">
+        <button onclick="selectProfile('verdi')" class="group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-emerald-500/60 hover:bg-emerald-500/10 transition text-center">
           <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-slate-950 font-bold text-lg flex items-center justify-center">V</div>
           <div class="font-bold text-base">Verdi</div>
           <div class="text-[11px] text-emerald-400 mt-0.5">Clean Bulk Mode</div>
         </button>
-        <button type="button" onclick="selectProfile('nonit')" class="cursor-pointer group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-rose-500/60 hover:bg-rose-500/10 transition text-center">
+        <button onclick="selectProfile('nonit')" class="group p-4 rounded-2xl border border-slate-700/80 bg-slate-800/40 hover:border-rose-500/60 hover:bg-rose-500/10 transition text-center">
           <div class="w-12 h-12 mx-auto mb-2.5 rounded-full bg-gradient-to-br from-amber-400 to-rose-500 text-slate-950 font-bold text-lg flex items-center justify-center">N</div>
           <div class="font-bold text-base">Nonit</div>
           <div class="text-[11px] text-rose-400 mt-0.5">Lean Toning Mode</div>
@@ -64,12 +104,11 @@
         <p class="text-sm text-slate-300">Masukkan PIN 4-digit (Default: 1234)</p>
       </div>
       <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-        onkeydown="if(event.key==='Enter') verifyPin()"
         class="w-full text-center tracking-[0.6em] text-2xl font-bold py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-emerald-400 focus:outline-none mb-3" />
       <p id="pinError" class="text-xs text-rose-400 text-center mb-3 hidden">PIN salah, coba lagi.</p>
       <div class="flex gap-2">
-        <button type="button" onclick="backToProfiles()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Kembali</button>
-        <button type="button" onclick="verifyPin()" class="w-2/3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Masuk</button>
+        <button onclick="backToProfiles()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Kembali</button>
+        <button onclick="verifyPin()" class="w-2/3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Masuk</button>
       </div>
     </div>
 
@@ -80,7 +119,9 @@
   </div>
 </div>
 
+<!-- MAIN APP -->
 <div id="appContainer" class="hidden max-w-lg mx-auto px-4 pt-4">
+  <!-- Header -->
   <header class="flex items-center justify-between mb-4">
     <div>
       <div class="flex items-center gap-2">
@@ -90,15 +131,16 @@
       <p id="activeDateLabel" class="text-xs text-slate-400 mt-0.5"></p>
     </div>
     <div class="flex items-center gap-2">
-      <button type="button" onclick="manualRefresh()" title="Sinkronisasi Sekarang" class="p-2 rounded-xl glass text-slate-300 hover:text-emerald-400">
+      <button onclick="manualRefresh()" title="Sinkronisasi Sekarang" class="p-2 rounded-xl glass text-slate-300 hover:text-emerald-400">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
       </button>
-      <button type="button" onclick="logout()" class="px-3 py-1.5 rounded-xl glass text-xs font-semibold text-slate-300">
+      <button onclick="logout()" class="px-3 py-1.5 rounded-xl glass text-xs font-semibold text-slate-300">
         <span id="currentUserLabel">Verdi</span> • Ganti
       </button>
     </div>
   </header>
 
+  <!-- Nudge Banner -->
   <div id="nudgeBanner" class="hidden mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-400/40 flex items-start justify-between gap-3">
     <div class="flex items-start gap-2.5">
       <i data-lucide="bell-ring" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
@@ -107,55 +149,61 @@
         <div id="nudgeMessage" class="text-sm text-slate-100 mt-0.5"></div>
       </div>
     </div>
-    <button type="button" onclick="dismissNudge()" class="text-xs px-2 py-1 rounded-lg bg-slate-900/60 text-slate-300">OK</button>
+    <button onclick="dismissNudge()" class="text-xs px-2 py-1 rounded-lg bg-slate-900/60 text-slate-300">OK</button>
   </div>
 
+  <!-- Date Navigator -->
   <div class="flex items-center justify-between glass rounded-2xl p-2 mb-4">
-    <button type="button" onclick="changeDate(-1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+    <button onclick="changeDate(-1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
     <input type="date" id="datePicker" onchange="onDatePick(this.value)" class="bg-transparent text-sm font-semibold text-center text-slate-100 focus:outline-none" />
-    <button type="button" onclick="changeDate(1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+    <button onclick="changeDate(1)" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
   </div>
 
+  <!-- TAB 1: DASHBOARD BERSAMA -->
   <section id="tab-dashboard" class="space-y-4">
+    <!-- Comparative Cards -->
     <div id="coupleCards" class="grid grid-cols-1 gap-3"></div>
 
+    <!-- Quick Nudge / Saling Ingatkan -->
     <div class="glass rounded-2xl p-4">
       <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
         <i data-lucide="send" class="w-3.5 h-3.5 text-emerald-400"></i> Saling Ingatkan & Kontrol Bersama
       </h3>
       <div class="grid grid-cols-2 gap-2 mb-2.5">
-        <button type="button" onclick="sendNudge('Jangan lupa penuhi target protein & minum whey hari ini! 💪')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button onclick="sendNudge('Jangan lupa penuhi target protein & minum whey hari ini! 💪')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🥤 Ingatkan Protein / Whey
         </button>
-        <button type="button" onclick="sendNudge('Sudah minum air putih & creatine 5g hari ini? 💧')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button onclick="sendNudge('Sudah minum air putih & creatine 5g hari ini? 💧')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           💧 Creatine & Hidrasi
         </button>
-        <button type="button" onclick="sendNudge('Yuk jadwal workout / gym / padel hari ini! 🏋️')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button onclick="sendNudge('Yuk jadwal workout / gym / padel hari ini! 🏋️')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🏋️ Ajak Gym / Olahraga
         </button>
-        <button type="button" onclick="sendNudge('Cek sisa kalori malam ini ya, jangan kebablasan! 🥗')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
+        <button onclick="sendNudge('Cek sisa kalori malam ini ya, jangan kebablasan! 🥗')" class="text-left p-2.5 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-medium text-slate-200 border border-slate-700/60">
           🥗 Kontrol Kalori Malam
         </button>
       </div>
       <div class="flex gap-2">
         <input id="customNudgeInput" type="text" placeholder="Tulis pesan pengingat untuk pasangan..." class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs focus:outline-none focus:border-emerald-400" />
-        <button type="button" onclick="sendCustomNudge()" class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Kirim</button>
+        <button onclick="sendCustomNudge()" class="px-3.5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs">Kirim</button>
       </div>
     </div>
 
+    <!-- Daily Log Feed (Both) -->
     <div class="glass rounded-2xl p-4">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Log Aktivitas & Makan Hari Ini</h3>
         <div class="flex gap-1 text-xs">
-          <button type="button" onclick="setLogFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold">Semua</button>
-          <button type="button" onclick="setLogFilter('verdi')" id="filter-verdi" class="px-2.5 py-1 rounded-lg text-slate-400">Verdi</button>
-          <button type="button" onclick="setLogFilter('nonit')" id="filter-nonit" class="px-2.5 py-1 rounded-lg text-slate-400">Nonit</button>
+          <button onclick="setLogFilter('all')" id="filter-all" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-semibold">Semua</button>
+          <button onclick="setLogFilter('verdi')" id="filter-verdi" class="px-2.5 py-1 rounded-lg text-slate-400">Verdi</button>
+          <button onclick="setLogFilter('nonit')" id="filter-nonit" class="px-2.5 py-1 rounded-lg text-slate-400">Nonit</button>
         </div>
       </div>
       <div id="logsList" class="space-y-2"></div>
     </div>
   </section>
 
+  <!-- TAB 2: INPUT NUTRISI -->
   <section id="tab-food" class="hidden space-y-4">
     <div class="glass rounded-2xl p-4">
       <h3 class="text-sm font-bold mb-3">Preset Cepat 1-Tap</h3>
@@ -189,12 +237,13 @@
         <input id="saveAsPreset" type="checkbox" class="rounded bg-slate-900 border-slate-700 text-emerald-500" />
         Simpan ke daftar Preset Favorit
       </label>
-      <button type="button" onclick="addFoodLog()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
+      <button onclick="addFoodLog()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
         + Simpan Catatan Nutrisi
       </button>
     </div>
   </section>
 
+  <!-- TAB 3: INPUT WORKOUT -->
   <section id="tab-workout" class="hidden space-y-4">
     <div class="glass rounded-2xl p-4 space-y-3">
       <h3 class="text-sm font-bold">Catat Aktivitas Gym / Olahraga</h3>
@@ -230,12 +279,13 @@
         <label class="text-xs text-slate-400">Catatan Latihan (opsional)</label>
         <input id="woNote" type="text" placeholder="Contoh: Upper body, Garmin 135 bpm" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
       </div>
-      <button type="button" onclick="addWorkoutLog()" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">
+      <button onclick="addWorkoutLog()" class="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm">
         + Simpan Aktivitas Workout
       </button>
     </div>
   </section>
 
+  <!-- TAB 4: TARGET & PIN -->
   <section id="tab-settings" class="hidden space-y-4">
     <div class="glass rounded-2xl p-4 space-y-3">
       <h3 class="text-sm font-bold text-emerald-400">Target Harian Verdi</h3>
@@ -273,27 +323,28 @@
       </div>
     </div>
 
-    <button type="button" onclick="saveSettings()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
+    <button onclick="saveSettings()" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">
       Simpan Perubahan Target & PIN
     </button>
   </section>
 </div>
 
+<!-- BOTTOM NAV -->
 <nav id="bottomNav" class="hidden fixed bottom-0 inset-x-0 glass border-t border-slate-800 z-40">
   <div class="max-w-lg mx-auto grid grid-cols-4 py-2">
-    <button type="button" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-emerald-400">
+    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 text-emerald-400">
       <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">Pantau</span>
     </button>
-    <button type="button" onclick="switchTab('food')" id="nav-food" class="flex flex-col items-center gap-1 text-slate-400">
+    <button onclick="switchTab('food')" id="nav-food" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="utensils" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">+ Nutrisi</span>
     </button>
-    <button type="button" onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center gap-1 text-slate-400">
+    <button onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="dumbbell" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">+ Gym</span>
     </button>
-    <button type="button" onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400">
+    <button onclick="switchTab('settings')" id="nav-settings" class="flex flex-col items-center gap-1 text-slate-400">
       <i data-lucide="sliders" class="w-5 h-5"></i>
       <span class="text-[10px] font-semibold">Target</span>
     </button>
@@ -466,7 +517,7 @@
     renderCoupleCards();
     renderLogs();
     renderPresets();
-    if (window.lucide) lucide.createIcons();
+    lucide.createIcons();
   }
 
   function renderNudge() {
@@ -583,19 +634,19 @@
               ${isFood ? `+${item.cal} kcal • ${item.prot}g protein` : `-${item.cal} kcal • ${item.dur} mnt ${item.note ? '• ' + item.note : ''}`}
             </div>
           </div>
-          <button type="button" onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1">
+          <button onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
       `;
     }).join("");
-    if (window.lucide) lucide.createIcons();
+    lucide.createIcons();
   }
 
   function renderPresets() {
     const grid = document.getElementById("presetGrid");
     grid.innerHTML = appState.presets.map(p => `
-      <button type="button" onclick="quickAddPreset('${p.id}')" class="text-left p-2.5 rounded-xl bg-slate-900/80 hover:border-emerald-500/50 border border-slate-800 transition">
+      <button onclick="quickAddPreset('${p.id}')" class="text-left p-2.5 rounded-xl bg-slate-900/80 hover:border-emerald-500/50 border border-slate-800 transition">
         <div class="text-xs font-semibold text-slate-100 truncate">${p.name}</div>
         <div class="text-[11px] text-emerald-400 mt-0.5">${p.cal} kcal • ${p.prot}g prot</div>
       </button>
@@ -690,7 +741,8 @@
     pullFromCloud();
   }
 
-  if (window.lucide) lucide.createIcons();
+  // Init
+  lucide.createIcons();
   if (currentUser && appState.profiles[currentUser]) {
     enterApp();
   }

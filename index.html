@@ -31,45 +31,7 @@
 <body class="min-h-screen pb-24 selection:bg-emerald-500/30">
 
 <script>
-  // =========================================================================
-  // const SHEET_NAME = "DuoFitDB";
-
-function getOrCreateSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.getRange("A1").setValue("STATE_JSON");
-    sheet.getRange("B1").setValue("UPDATED_AT");
-  }
-  return sheet;
-}
-
-function doGet(e) {
-  const sheet = getOrCreateSheet();
-  const rawJson = sheet.getRange("A2").getValue();
-  const output = rawJson ? rawJson : JSON.stringify({ empty: true });
-  return ContentService.createTextOutput(output).setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-  try {
-    const sheet = getOrCreateSheet();
-    const payload = e.postData.contents;
-    sheet.getRange("A2").setValue(payload);
-    sheet.getRange("B2").setValue(new Date().toISOString());
-    return ContentService.createTextOutput(JSON.stringify({ status: "ok" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}
-  // =========================================================================
+  // Tempel URL Web App Google Apps Script (kode server ada di file Code.gs)
   const APPS_SCRIPT_URL = "TEMPEL_URL_WEB_APP_ANDA_DI_SINI";
 </script>
 
@@ -206,7 +168,10 @@ function doPost(e) {
   <!-- TAB 2: INPUT NUTRISI -->
   <section id="tab-food" class="hidden space-y-4">
     <div class="glass rounded-2xl p-4">
-      <h3 class="text-sm font-bold mb-3">Preset Cepat 1-Tap</h3>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-bold">Preset Cepat 1-Tap</h3>
+        <button id="presetManageBtn" onclick="togglePresetManage()" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 bg-slate-800">Kelola</button>
+      </div>
       <div id="presetGrid" class="grid grid-cols-2 gap-2"></div>
     </div>
 
@@ -329,6 +294,46 @@ function doPost(e) {
   </section>
 </div>
 
+<!-- EDIT LOG MODAL -->
+<div id="editModal" class="hidden fixed inset-0 z-50 bg-black/60">
+  <div class="h-full flex items-center justify-center p-4">
+    <div class="w-full max-w-md glass rounded-2xl p-4 space-y-3">
+      <h3 id="editHeading" class="text-sm font-bold">Edit Catatan</h3>
+      <input type="hidden" id="editId" />
+      <div>
+        <label id="editNameLabel" class="text-xs text-slate-400">Nama</label>
+        <input id="editName" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+      </div>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="text-xs text-slate-400">Kalori (kcal)</label>
+          <input id="editCal" type="number" inputmode="numeric" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+        </div>
+        <div id="editProtWrap">
+          <label class="text-xs text-slate-400">Protein (gram)</label>
+          <input id="editProt" type="number" inputmode="decimal" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+        </div>
+        <div id="editDurWrap" class="hidden">
+          <label class="text-xs text-slate-400">Durasi (menit)</label>
+          <input id="editDur" type="number" inputmode="numeric" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+        </div>
+      </div>
+      <div id="editNoteWrap" class="hidden">
+        <label class="text-xs text-slate-400">Catatan</label>
+        <input id="editNote" type="text" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+      </div>
+      <div>
+        <label class="text-xs text-slate-400">Tanggal</label>
+        <input id="editDate" type="date" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm" />
+      </div>
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeEdit()" class="w-1/3 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Batal</button>
+        <button onclick="saveEdit()" class="w-2/3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Simpan perubahan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav id="bottomNav" class="hidden fixed bottom-0 inset-x-0 glass border-t border-slate-800 z-40">
   <div class="max-w-lg mx-auto grid grid-cols-4 py-2">
@@ -369,24 +374,84 @@ function doPost(e) {
     nudge: null
   };
 
-  let appState = JSON.parse(localStorage.getItem("duofit_cache")) || DEFAULT_STATE;
+  // ---- Tanggal lokal (WIB), bukan UTC ----
+  function toDateStr(d) {
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+  const todayStr = () => toDateStr(new Date());
+
+  // ---- State & merge ----
+  function normalizeState(s) {
+    const base = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    if (!s || typeof s !== "object") return base;
+    return {
+      profiles: s.profiles || base.profiles,
+      presets: Array.isArray(s.presets) ? s.presets : base.presets,
+      logs: Array.isArray(s.logs) ? s.logs : [],
+      nudge: s.nudge || null,
+      deleted: s.deleted || {},
+      meta: Object.assign({ profilesAt: 0, nudgeAt: 0 }, s.meta)
+    };
+  }
+  function loadCache() {
+    try { return normalizeState(JSON.parse(localStorage.getItem("duofit_cache"))); }
+    catch (e) { return normalizeState(null); }
+  }
+  const newId = prefix => prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+  const idTime = id => Number(String(id).split("_")[1]) || 0;
+  function touch(key) { appState.meta[key] = Date.now(); }
+
+  // Gabungkan per-record (bukan timpa seluruh state): log/preset digabung by id,
+  // hapus dicatat sebagai tombstone, profil & nudge memakai versi terbaru.
+  function mergeStates(localS, remoteS) {
+    const a = normalizeState(localS), b = normalizeState(remoteS);
+    const deleted = Object.assign({}, b.deleted, a.deleted);
+    const mergeList = (la, lb) => {
+      const m = new Map();
+      [...lb, ...la].forEach(x => {
+        if (!x || deleted[x.id]) return;
+        const o = m.get(x.id);
+        if (!o || (x.updatedAt || 0) >= (o.updatedAt || 0)) m.set(x.id, x);
+      });
+      return [...m.values()];
+    };
+    const localWins = k => (a.meta[k] || 0) > (b.meta[k] || 0);
+    return {
+      profiles: localWins("profilesAt") ? a.profiles : b.profiles,
+      nudge: localWins("nudgeAt") ? a.nudge : b.nudge,
+      presets: mergeList(a.presets, b.presets),
+      logs: mergeList(a.logs, b.logs).sort((x, y) => idTime(x.id) - idTime(y.id)),
+      deleted,
+      meta: {
+        profilesAt: Math.max(a.meta.profilesAt || 0, b.meta.profilesAt || 0),
+        nudgeAt: Math.max(a.meta.nudgeAt || 0, b.meta.nudgeAt || 0)
+      }
+    };
+  }
+
+  let appState = loadCache();
   let currentUser = localStorage.getItem("duofit_user") || null;
   let pendingUser = null;
-  let selectedDate = new Date().toISOString().split("T")[0];
+  let selectedDate = todayStr();
   let logFilter = "all";
   let isSyncing = false;
+  let dirty = false, pending = 0, pushQueue = Promise.resolve();
+
+  const noUrl = () => !APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("TEMPEL_URL");
+  const saveCache = () => localStorage.setItem("duofit_cache", JSON.stringify(appState));
 
   async function pullFromCloud() {
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("TEMPEL_URL")) {
-      updateSyncUI(false, "URL Apps Script belum diisi");
-      return;
-    }
+    if (noUrl()) { updateSyncUI(false, "URL Apps Script belum diisi"); return; }
+    if (isSyncing) return;
     try {
       const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
       const data = await res.json();
       if (data && !data.empty && data.profiles) {
-        appState = data;
-        localStorage.setItem("duofit_cache", JSON.stringify(appState));
+        appState = mergeStates(appState, data);
+        saveCache();
+        if (dirty) pushToCloud();
       } else if (data && data.empty) {
         await pushToCloud();
       }
@@ -397,25 +462,38 @@ function doPost(e) {
     }
   }
 
-  async function pushToCloud() {
-    localStorage.setItem("duofit_cache", JSON.stringify(appState));
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("TEMPEL_URL")) return;
+  function pushToCloud() {
+    dirty = true; pending++; saveCache();
+    if (noUrl()) { pending--; return Promise.resolve(); }
+    pushQueue = pushQueue.then(doPush);
+    return pushQueue;
+  }
+
+  async function doPush() {
     isSyncing = true;
     updateSyncUI(true, "Menyimpan ke Cloud...");
+    let ok = false;
     try {
+      // Ambil data terbaru dulu, gabungkan, baru simpan -> tidak menimpa catatan pasangan
+      const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
+      const data = await res.json();
+      if (data && !data.empty && data.profiles) appState = mergeStates(appState, data);
+      saveCache();
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(appState)
       });
-      setTimeout(() => {
-        isSyncing = false;
-        updateSyncUI(true, "Tersinkronisasi");
-      }, 800);
+      ok = true;
+      updateSyncUI(true, "Tersinkronisasi");
+      renderAll();
     } catch (e) {
+      updateSyncUI(false, "Gagal Sync • tersimpan di HP");
+    } finally {
+      pending--;
+      if (ok && pending === 0) dirty = false;
       isSyncing = false;
-      updateSyncUI(false, "Gagal Sync");
     }
   }
 
@@ -494,9 +572,9 @@ function doPost(e) {
   }
 
   function changeDate(delta) {
-    const d = new Date(selectedDate);
+    const d = new Date(selectedDate + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    selectedDate = d.toISOString().split("T")[0];
+    selectedDate = toDateStr(d);
     document.getElementById("datePicker").value = selectedDate;
     renderAll();
   }
@@ -540,6 +618,7 @@ function doPost(e) {
       text: text,
       time: new Date().toISOString()
     };
+    touch("nudgeAt");
     pushToCloud();
     alert("Pengingat terkirim ke HP " + appState.profiles[partner].name + "!");
   }
@@ -553,6 +632,7 @@ function doPost(e) {
 
   function dismissNudge() {
     appState.nudge = null;
+    touch("nudgeAt");
     pushToCloud();
     renderNudge();
   }
@@ -634,23 +714,99 @@ function doPost(e) {
               ${isFood ? `+${item.cal} kcal • ${item.prot}g protein` : `-${item.cal} kcal • ${item.dur} mnt ${item.note ? '• ' + item.note : ''}`}
             </div>
           </div>
-          <button onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+          <div class="flex items-center shrink-0">
+            <button onclick="editLog('${item.id}')" title="Edit" class="text-slate-500 hover:text-emerald-400 p-1">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteLog('${item.id}')" title="Hapus" class="text-slate-500 hover:text-rose-400 p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
         </div>
       `;
     }).join("");
     lucide.createIcons();
   }
 
+  let presetManage = false;
+  function togglePresetManage() { presetManage = !presetManage; renderPresets(); }
+
   function renderPresets() {
     const grid = document.getElementById("presetGrid");
-    grid.innerHTML = appState.presets.map(p => `
+    const btn = document.getElementById("presetManageBtn");
+    btn.textContent = presetManage ? "Selesai" : "Kelola";
+    btn.className = presetManage
+      ? "px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300"
+      : "px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 bg-slate-800";
+    if (appState.presets.length === 0) {
+      grid.innerHTML = `<p class="col-span-2 text-xs text-slate-500 text-center py-3">Belum ada preset. Centang "Simpan ke daftar Preset Favorit" saat mencatat makanan.</p>`;
+      return;
+    }
+    grid.innerHTML = appState.presets.map(p => presetManage ? `
+      <div class="flex items-center justify-between gap-1 p-2.5 rounded-xl bg-slate-900/80 border border-rose-500/30">
+        <div class="min-w-0">
+          <div class="text-xs font-semibold text-slate-100 truncate">${p.name}</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">${p.cal} kcal • ${p.prot}g prot</div>
+        </div>
+        <button onclick="deletePreset('${p.id}')" title="Hapus preset" class="p-1 text-rose-400 shrink-0">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>` : `
       <button onclick="quickAddPreset('${p.id}')" class="text-left p-2.5 rounded-xl bg-slate-900/80 hover:border-emerald-500/50 border border-slate-800 transition">
         <div class="text-xs font-semibold text-slate-100 truncate">${p.name}</div>
         <div class="text-[11px] text-emerald-400 mt-0.5">${p.cal} kcal • ${p.prot}g prot</div>
-      </button>
-    `).join("");
+      </button>`).join("");
+    lucide.createIcons();
+  }
+
+  function deletePreset(id) {
+    const p = appState.presets.find(x => x.id === id);
+    if (!p || !confirm('Hapus preset "' + p.name + '"?')) return;
+    appState.presets = appState.presets.filter(x => x.id !== id);
+    appState.deleted[id] = Date.now();
+    pushToCloud();
+    renderPresets();
+  }
+
+  function editLog(id) {
+    const l = appState.logs.find(x => x.id === id);
+    if (!l) return;
+    const food = l.kind === "food";
+    document.getElementById("editId").value = id;
+    document.getElementById("editHeading").textContent = food ? "Edit Catatan Makanan" : "Edit Catatan Workout";
+    document.getElementById("editNameLabel").textContent = food ? "Nama Makanan / Menu" : "Jenis Aktivitas";
+    document.getElementById("editName").value = l.title || "";
+    document.getElementById("editCal").value = l.cal ?? "";
+    document.getElementById("editProt").value = l.prot ?? "";
+    document.getElementById("editDur").value = l.dur ?? "";
+    document.getElementById("editNote").value = l.note || "";
+    document.getElementById("editDate").value = l.date;
+    document.getElementById("editProtWrap").classList.toggle("hidden", !food);
+    document.getElementById("editDurWrap").classList.toggle("hidden", food);
+    document.getElementById("editNoteWrap").classList.toggle("hidden", food);
+    document.getElementById("editModal").classList.remove("hidden");
+  }
+
+  function closeEdit() { document.getElementById("editModal").classList.add("hidden"); }
+
+  function saveEdit() {
+    const l = appState.logs.find(x => x.id === document.getElementById("editId").value);
+    if (!l) return closeEdit();
+    const title = document.getElementById("editName").value.trim();
+    if (!title) return alert("Nama tidak boleh kosong.");
+    l.title = title;
+    l.cal = Number(document.getElementById("editCal").value || 0);
+    if (l.kind === "food") {
+      l.prot = Number(document.getElementById("editProt").value || 0);
+    } else {
+      l.dur = Number(document.getElementById("editDur").value || 0);
+      l.note = document.getElementById("editNote").value.trim();
+    }
+    l.date = document.getElementById("editDate").value || l.date;
+    l.updatedAt = Date.now();
+    closeEdit();
+    pushToCloud();
+    renderAll();
   }
 
   function quickAddPreset(id) {
@@ -658,7 +814,7 @@ function doPost(e) {
     const targetUser = document.getElementById("foodUser").value;
     if (!p) return;
     appState.logs.push({
-      id: "log_" + Date.now(),
+      id: newId("log"),
       date: selectedDate,
       user: targetUser,
       kind: "food",
@@ -678,10 +834,10 @@ function doPost(e) {
     const prot = Number(document.getElementById("foodProt").value || 0);
     if (!title) return alert("Isi nama makanan terlebih dahulu.");
 
-    appState.logs.push({ id: "log_" + Date.now(), date: selectedDate, user, kind: "food", title, cal, prot });
+    appState.logs.push({ id: newId("log"), date: selectedDate, user, kind: "food", title, cal, prot });
 
     if (document.getElementById("saveAsPreset").checked) {
-      appState.presets.push({ id: "p_" + Date.now(), name: title, cal, prot });
+      appState.presets.push({ id: newId("p"), name: title, cal, prot });
       document.getElementById("saveAsPreset").checked = false;
     }
 
@@ -700,7 +856,7 @@ function doPost(e) {
     const cal = Number(document.getElementById("woCal").value || 0);
     const note = document.getElementById("woNote").value.trim();
 
-    appState.logs.push({ id: "log_" + Date.now(), date: selectedDate, user, kind: "workout", title, dur, cal, note });
+    appState.logs.push({ id: newId("log"), date: selectedDate, user, kind: "workout", title, dur, cal, note });
     document.getElementById("woDur").value = "";
     document.getElementById("woCal").value = "";
     document.getElementById("woNote").value = "";
@@ -711,6 +867,7 @@ function doPost(e) {
 
   function deleteLog(id) {
     appState.logs = appState.logs.filter(l => l.id !== id);
+    appState.deleted[id] = Date.now();
     pushToCloud();
     renderAll();
   }
@@ -731,6 +888,7 @@ function doPost(e) {
     appState.profiles.nonit.calTarget = Number(document.getElementById("setNonitCal").value || 1650);
     appState.profiles.nonit.protTarget = Number(document.getElementById("setNonitProt").value || 105);
     appState.profiles.nonit.pin = document.getElementById("setNonitPin").value || "1234";
+    touch("profilesAt");
     pushToCloud();
     alert("Target dan PIN berhasil disimpan ke Google Sheets!");
     switchTab("dashboard");
